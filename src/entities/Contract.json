@@ -1,0 +1,155 @@
+{
+  "name": "Contract",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome do contrato"
+    },
+    "cliente": {
+      "type": "string",
+      "description": "Nome do cliente"
+    },
+    "grupo_cliente": {
+      "type": "string",
+      "description": "Grupo do cliente"
+    },
+    "contrato": {
+      "type": "string",
+      "description": "Número/código do contrato"
+    },
+    "termo": {
+      "type": "string",
+      "description": "Termo do contrato"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativo",
+        "Expirado"
+      ],
+      "default": "Ativo",
+      "description": "Status do contrato"
+    },
+    "tipo_tratativa": {
+      "type": "string",
+      "enum": [
+        "PRORROGAÇÃO",
+        "RENOVAÇÃO",
+        "ADITAMENTO",
+        "CANCELAMENTO",
+        "SEM TRATATIVA",
+        "FINALIZADA",
+        "DESCONTINUIDADE"
+      ],
+      "default": "SEM TRATATIVA",
+      "description": "Tipo de tratativa do contrato"
+    },
+    "tipo_aditamento": {
+      "type": "string",
+      "enum": [
+        "Aditamento com Expansão",
+        "Aditamento com Redução"
+      ],
+      "description": "Tipo específico de aditamento"
+    },
+    "objeto_contrato": {
+      "type": "string",
+      "description": "Objeto do contrato"
+    },
+    "numero_processo_sei_nosso": {
+      "type": "string",
+      "description": "Número do processo SEI nosso"
+    },
+    "numero_processo_sei_cliente": {
+      "type": "string",
+      "description": "Número do processo SEI do cliente"
+    },
+    "data_inicio_efetividade": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de início da efetividade"
+    },
+    "data_fim_efetividade": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de fim da efetividade"
+    },
+    "status_vencimento": {
+      "type": "string",
+      "enum": [
+        "Dentro do Prazo",
+        "Fora do Prazo",
+        "Descoberto"
+      ],
+      "default": "Dentro do Prazo",
+      "description": "Status do vencimento baseado na etapa"
+    },
+    "contrato_cliente": {
+      "type": "string",
+      "description": "Contrato do cliente"
+    },
+    "contrato_anterior": {
+      "type": "string",
+      "description": "Contrato anterior"
+    },
+    "valor_contrato": {
+      "type": "number",
+      "description": "Valor do contrato"
+    },
+    "valor_faturado": {
+      "type": "number",
+      "description": "Valor faturado"
+    },
+    "valor_cancelado": {
+      "type": "number",
+      "description": "Valor cancelado"
+    },
+    "valor_a_faturar": {
+      "type": "number",
+      "description": "Valor a faturar"
+    },
+    "numero_pnpp_crm": {
+      "type": "string",
+      "description": "Número PNPP/CRM"
+    },
+    "contrato_novo": {
+      "type": "string",
+      "description": "Contrato novo"
+    },
+    "termo_novo": {
+      "type": "string",
+      "description": "Termo novo"
+    },
+    "esp": {
+      "type": "string",
+      "description": "ESP"
+    },
+    "valor_novo_contrato": {
+      "type": "number",
+      "description": "Valor do novo contrato"
+    },
+    "sei": {
+      "type": "string",
+      "description": "SEI"
+    },
+    "etapa": {
+      "type": "string",
+      "description": "Etapa atual do contrato baseada no tipo de tratativa"
+    },
+    "data_limite_andamento": {
+      "type": "string",
+      "format": "date",
+      "description": "Data limite para andamento"
+    },
+    "observacao": {
+      "type": "string",
+      "description": "Observações"
+    }
+  },
+  "required": [
+    "nome",
+    "cliente",
+    "contrato"
+  ]
+}
