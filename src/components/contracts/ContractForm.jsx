@@ -6,15 +6,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function ContractForm({ 
-  initialData = {}, 
-  onSubmit, 
-  isSubmitting = false, 
+export default function ContractForm({
+  initialData = {},
+  onSubmit,
+  isSubmitting = false,
   submitButtonText = "Salvar",
-  isEdit = false
+  isEdit = false,
+  users = [],
+  currentUser = null
 }) {
   const [formData, setFormData] = useState({
-    nome: "",
+    analista_responsavel: "",
     cliente: "",
     grupo_cliente: "",
     contrato: "",
@@ -45,16 +47,35 @@ export default function ContractForm({
     ...initialData
   });
 
+  useEffect(() => {
+    if (!isEdit && currentUser) {
+      setFormData(prev => ({ ...prev, analista_responsavel: currentUser.full_name }));
+    }
+  }, [isEdit, currentUser]);
+
+  // Calcular automaticamente o Valor a Faturar
+  useEffect(() => {
+    const valorContrato = parseFloat(formData.valor_contrato) || 0;
+    const valorFaturado = parseFloat(formData.valor_faturado) || 0;
+    const valorCancelado = parseFloat(formData.valor_cancelado) || 0;
+
+    const valorAFaturar = valorContrato - valorFaturado - valorCancelado;
+
+    setFormData(prev => ({
+      ...prev,
+      valor_a_faturar: Math.max(0, valorAFaturar) // Não permitir valores negativos
+    }));
+  }, [formData.valor_contrato, formData.valor_faturado, formData.valor_cancelado]);
+
   const handleInputChange = (field, value) => {
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
-      
-      // Reset etapa when tipo_tratativa changes
+
       if (field === 'tipo_tratativa') {
         newData.etapa = "";
         newData.tipo_aditamento = "";
       }
-      
+
       return newData;
     });
   };
@@ -101,7 +122,7 @@ export default function ContractForm({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     const processedData = {
       ...formData,
       valor_contrato: parseFloat(formData.valor_contrato) || 0,
@@ -124,24 +145,37 @@ export default function ContractForm({
   const etapaOptions = getEtapaOptions();
   const isEtapaEnabled = formData.tipo_tratativa === "PRORROGAÇÃO" || formData.tipo_tratativa === "RENOVAÇÃO";
 
+  // Verificar se o usuário é Gestor - se for, pode editar tudo
+  const isGestor = currentUser?.perfil === "GESTOR";
+  const canEditBasicInfo = !isEdit || isGestor;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
-      {/* Informações Básicas - Read only in edit mode */}
+      {/* Informações Básicas */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Informações Básicas</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="nome">Nome do Contrato *</Label>
-            <Input
-              id="nome"
-              value={formData.nome}
-              onChange={(e) => handleInputChange("nome", e.target.value)}
+            <Label htmlFor="analista_responsavel">Analista Responsável *</Label>
+            <Select
+              value={formData.analista_responsavel}
+              onValueChange={(value) => handleInputChange("analista_responsavel", value)}
+              disabled={!canEditBasicInfo}
               required
-              disabled={isEdit}
-              className={isEdit ? "bg-gray-100" : ""}
-            />
+            >
+              <SelectTrigger className={!canEditBasicInfo ? "bg-gray-100" : ""}>
+                <SelectValue placeholder="Selecione um analista" />
+              </SelectTrigger>
+              <SelectContent>
+                {users.map(user => (
+                  <SelectItem key={user.id} value={user.full_name}>
+                    {user.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="cliente">Cliente *</Label>
@@ -150,8 +184,8 @@ export default function ContractForm({
               value={formData.cliente}
               onChange={(e) => handleInputChange("cliente", e.target.value)}
               required
-              disabled={isEdit}
-              className={isEdit ? "bg-gray-100" : ""}
+              disabled={!canEditBasicInfo}
+              className={!canEditBasicInfo ? "bg-gray-100" : ""}
             />
           </div>
           <div className="space-y-2">
@@ -160,8 +194,8 @@ export default function ContractForm({
               id="grupo_cliente"
               value={formData.grupo_cliente}
               onChange={(e) => handleInputChange("grupo_cliente", e.target.value)}
-              disabled={isEdit}
-              className={isEdit ? "bg-gray-100" : ""}
+              disabled={!canEditBasicInfo}
+              className={!canEditBasicInfo ? "bg-gray-100" : ""}
             />
           </div>
           <div className="space-y-2">
@@ -171,8 +205,8 @@ export default function ContractForm({
               value={formData.contrato}
               onChange={(e) => handleInputChange("contrato", e.target.value)}
               required
-              disabled={isEdit}
-              className={isEdit ? "bg-gray-100" : ""}
+              disabled={!canEditBasicInfo}
+              className={!canEditBasicInfo ? "bg-gray-100" : ""}
             />
           </div>
           <div className="space-y-2">
@@ -181,14 +215,14 @@ export default function ContractForm({
               id="termo"
               value={formData.termo}
               onChange={(e) => handleInputChange("termo", e.target.value)}
-              disabled={isEdit}
-              className={isEdit ? "bg-gray-100" : ""}
+              disabled={!canEditBasicInfo}
+              className={!canEditBasicInfo ? "bg-gray-100" : ""}
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
-            <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)} disabled={isEdit}>
-              <SelectTrigger className={isEdit ? "bg-gray-100" : ""}>
+            <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)} disabled={!canEditBasicInfo}>
+              <SelectTrigger className={!canEditBasicInfo ? "bg-gray-100" : ""}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -200,7 +234,7 @@ export default function ContractForm({
         </CardContent>
       </Card>
 
-      {/* Tipo de Tratativa e Etapa - Editable */}
+      {/* Tipo de Tratativa e Etapa */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Tratativa e Etapa</CardTitle>
@@ -227,8 +261,8 @@ export default function ContractForm({
 
             <div className="space-y-2">
               <Label htmlFor="etapa">Etapa</Label>
-              <Select 
-                value={formData.etapa} 
+              <Select
+                value={formData.etapa}
                 onValueChange={(value) => handleInputChange("etapa", value)}
                 disabled={!isEtapaEnabled}
               >
@@ -263,7 +297,7 @@ export default function ContractForm({
         </CardContent>
       </Card>
 
-      {/* Detalhes do Contrato - Read only in edit mode */}
+      {/* Detalhes do Contrato */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Detalhes do Contrato</CardTitle>
@@ -276,8 +310,8 @@ export default function ContractForm({
               value={formData.objeto_contrato}
               onChange={(e) => handleInputChange("objeto_contrato", e.target.value)}
               rows={3}
-              disabled={isEdit}
-              className={isEdit ? "bg-gray-100" : ""}
+              disabled={!canEditBasicInfo}
+              className={!canEditBasicInfo ? "bg-gray-100" : ""}
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -287,8 +321,8 @@ export default function ContractForm({
                 id="numero_processo_sei_nosso"
                 value={formData.numero_processo_sei_nosso}
                 onChange={(e) => handleInputChange("numero_processo_sei_nosso", e.target.value)}
-                disabled={isEdit}
-                className={isEdit ? "bg-gray-100" : ""}
+                disabled={!canEditBasicInfo}
+                className={!canEditBasicInfo ? "bg-gray-100" : ""}
               />
             </div>
             <div className="space-y-2">
@@ -297,15 +331,15 @@ export default function ContractForm({
                 id="numero_processo_sei_cliente"
                 value={formData.numero_processo_sei_cliente}
                 onChange={(e) => handleInputChange("numero_processo_sei_cliente", e.target.value)}
-                disabled={isEdit}
-                className={isEdit ? "bg-gray-100" : ""}
+                disabled={!canEditBasicInfo}
+                className={!canEditBasicInfo ? "bg-gray-100" : ""}
               />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Datas - Read only in edit mode */}
+      {/* Datas */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Prazos e Datas</CardTitle>
@@ -318,8 +352,8 @@ export default function ContractForm({
               type="date"
               value={formData.data_inicio_efetividade}
               onChange={(e) => handleInputChange("data_inicio_efetividade", e.target.value)}
-              disabled={isEdit}
-              className={isEdit ? "bg-gray-100" : ""}
+              disabled={!canEditBasicInfo}
+              className={!canEditBasicInfo ? "bg-gray-100" : ""}
             />
           </div>
           <div className="space-y-2">
@@ -329,8 +363,8 @@ export default function ContractForm({
               type="date"
               value={formData.data_fim_efetividade}
               onChange={(e) => handleInputChange("data_fim_efetividade", e.target.value)}
-              disabled={isEdit}
-              className={isEdit ? "bg-gray-100" : ""}
+              disabled={!canEditBasicInfo}
+              className={!canEditBasicInfo ? "bg-gray-100" : ""}
             />
           </div>
           <div className="space-y-2">
@@ -340,20 +374,20 @@ export default function ContractForm({
               type="date"
               value={formData.data_limite_andamento}
               onChange={(e) => handleInputChange("data_limite_andamento", e.target.value)}
-              disabled={isEdit}
-              className={isEdit ? "bg-gray-100" : ""}
+              disabled={!canEditBasicInfo}
+              className={!canEditBasicInfo ? "bg-gray-100" : ""}
             />
           </div>
         </CardContent>
       </Card>
 
-      {/* Valores Financeiros - Read only in edit mode with currency display */}
+      {/* Valores Financeiros */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Valores Financeiros</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {isEdit ? (
+          {isEdit && !isGestor ? (
             <>
               <div className="space-y-2">
                 <Label>Valor do Contrato</Label>
@@ -413,13 +447,17 @@ export default function ContractForm({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="valor_a_faturar">Valor a Faturar</Label>
+                <Label htmlFor="valor_a_faturar">
+                  Valor a Faturar
+                  <span className="text-xs text-gray-500 ml-2">(Calculado automaticamente)</span>
+                </Label>
                 <Input
                   id="valor_a_faturar"
                   type="number"
                   step="0.01"
                   value={formData.valor_a_faturar}
-                  onChange={(e) => handleInputChange("valor_a_faturar", e.target.value)}
+                  disabled
+                  className="bg-gray-50 cursor-not-allowed"
                 />
               </div>
             </>
@@ -427,7 +465,7 @@ export default function ContractForm({
         </CardContent>
       </Card>
 
-      {/* Informações Adicionais - Editable */}
+      {/* Informações Adicionais */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Informações Adicionais</CardTitle>
@@ -476,7 +514,7 @@ export default function ContractForm({
         </CardContent>
       </Card>
 
-      {/* Observações - Editable */}
+      {/* Observações */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Observações</CardTitle>
@@ -496,8 +534,8 @@ export default function ContractForm({
       </Card>
 
       <div className="flex justify-end">
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           disabled={isSubmitting}
           className="bg-blue-600 hover:bg-blue-700"
         >
