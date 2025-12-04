@@ -122,12 +122,32 @@ export default function ContractTable({ contracts, isLoading, onContractUpdate }
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className={vencimentoColors[contract.status_vencimento]}>
-                      {contract.status_vencimento}
-                      {contract.daysUntilExpiry !== null && contract.daysUntilExpiry >= 0 && (
-                        <span className="ml-1">({contract.daysUntilExpiry}d)</span>
-                      )}
-                    </Badge>
+                    {(() => {
+                      let status = contract.status_vencimento;
+                      const days = contract.daysUntilExpiry;
+
+                      // Calculate status if missing or empty
+                      if (!status && days !== null && days !== undefined && !isNaN(days)) {
+                        if (days < 0) status = "Vencido";
+                        else if (days <= 30) status = "Urgente";
+                        else if (days <= 60) status = "Atenção";
+                        else status = "Normal";
+                      }
+
+                      // Fallback for color if status is somehow still weird or custom
+                      const colorClass = vencimentoColors[status] || "bg-gray-100 text-gray-800";
+
+                      return (
+                        <Badge className={`${colorClass} whitespace-nowrap`}>
+                          {status || "N/A"}
+                          {days !== null && days !== undefined && !isNaN(days) && (
+                            <span className="ml-1">
+                              ({days}d)
+                            </span>
+                          )}
+                        </Badge>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell>
                     {(() => {

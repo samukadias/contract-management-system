@@ -449,17 +449,7 @@ export default function ContractForm({
                   className={!canEditBasicInfo ? "bg-gray-100" : ""}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="data_limite_andamento">Data Limite Andamento</Label>
-                <Input
-                  id="data_limite_andamento"
-                  type="date"
-                  value={formData.data_limite_andamento}
-                  onChange={(e) => handleInputChange("data_limite_andamento", e.target.value)}
-                  disabled={!canEditBasicInfo}
-                  className={!canEditBasicInfo ? "bg-gray-100" : ""}
-                />
-              </div>
+
             </CardContent>
           </Card>
         </TabsContent>

@@ -149,12 +149,7 @@ export default function ViewContract() {
                   <p className="text-gray-900">{format(new Date(contract.data_fim_efetividade), "dd/MM/yyyy")}</p>
                 </div>
               )}
-              {contract.data_limite_andamento && (
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Data Limite Andamento</p>
-                  <p className="text-gray-900">{format(new Date(contract.data_limite_andamento), "dd/MM/yyyy")}</p>
-                </div>
-              )}
+
             </CardContent>
           </Card>
 

@@ -40,6 +40,16 @@ export class Contract {
             created_by: dbContract.created_by,
             created_at: dbContract.created_at,
             updated_at: dbContract.updated_at,
+            daysUntilExpiry: (() => {
+                if (!dbContract.data_fim_efetividade) return null;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const endDate = new Date(dbContract.data_fim_efetividade);
+                if (isNaN(endDate.getTime())) return null;
+                endDate.setHours(0, 0, 0, 0);
+                const diffTime = endDate - today;
+                return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            })(),
         };
     }
 
