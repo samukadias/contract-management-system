@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Contract } from "@/entities/Contract";
+import { TermoConfirmacao } from "@/entities/TermoConfirmacao";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,21 +17,37 @@ export default function AnalystDashboard() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        loadContracts();
+        loadData();
     }, [user]);
 
-    const loadContracts = async () => {
+    const loadData = async () => {
         setIsLoading(true);
         try {
-            // Carregar todos os contratos e filtrar pelo analista
-            // (Idealmente isso seria filtrado no backend, mas para manter simples por enquanto)
-            const allContracts = await Contract.list();
+            const [allContracts, allTCs] = await Promise.all([
+                Contract.list(),
+                TermoConfirmacao.list()
+            ]);
+
+            // Filtrar contratos do analista
             const myContracts = allContracts.filter(c =>
                 c.analista_responsavel?.toLowerCase() === user.full_name?.toLowerCase()
             );
-            setContracts(myContracts);
+
+            // Calcular valor a faturar para cada contrato
+            const contractsWithValues = myContracts.map(contract => {
+                const contractTCs = allTCs.filter(tc => tc.contrato_associado_pd === contract.contrato);
+                const totalTCsValue = contractTCs.reduce((sum, tc) => sum + (tc.valor_total || 0), 0);
+
+                return {
+                    ...contract,
+                    valor_executado: totalTCsValue,
+                    valor_a_faturar: (contract.valor_contrato || 0) - totalTCsValue
+                };
+            });
+
+            setContracts(contractsWithValues);
         } catch (error) {
-            console.error("Erro ao carregar contratos:", error);
+            console.error("Erro ao carregar dados:", error);
         }
         setIsLoading(false);
     };

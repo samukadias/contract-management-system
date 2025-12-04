@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../lib/supabase';
 
 export class User {
     static STORAGE_KEY = "users_v1";
@@ -9,6 +9,7 @@ export class User {
         return {
             id: dbUser.id,
             email: dbUser.email,
+            password: dbUser.password, // Incluir senha (cuidado em produção!)
             full_name: dbUser.full_name,
             perfil: dbUser.perfil,
             nome_cliente: dbUser.nome_cliente,
@@ -21,6 +22,7 @@ export class User {
     static mapToDB(user) {
         return {
             email: user.email,
+            password: user.password, // Salvar senha
             full_name: user.full_name,
             perfil: user.perfil,
             nome_cliente: user.nome_cliente,

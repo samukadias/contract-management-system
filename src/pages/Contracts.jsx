@@ -32,10 +32,16 @@ export default function Contracts() {
       return false;
     }
 
-    const matchesSearch =
-      contract.contrato?.toLowerCase().includes(filters.search.toLowerCase()) ||
-      contract.cliente?.toLowerCase().includes(filters.search.toLowerCase()) ||
-      contract.analista_responsavel?.toLowerCase().includes(filters.search.toLowerCase());
+    const matchesSearch = filters.search === "" || (() => {
+      const searchLower = filters.search.toLowerCase();
+      return (
+        contract.contrato?.toLowerCase().includes(searchLower) ||
+        contract.cliente?.toLowerCase().includes(searchLower) ||
+        contract.analista_responsavel?.toLowerCase().includes(searchLower) ||
+        contract.secao_responsavel?.toLowerCase().includes(searchLower) ||
+        contract.objeto?.toLowerCase().includes(searchLower)
+      );
+    })();
 
     const matchesStatus = filters.status === "all" || contract.status === filters.status;
     const matchesAnalista = filters.analista === "all" || contract.analista_responsavel === filters.analista;
@@ -74,7 +80,7 @@ export default function Contracts() {
       {/* Filters */}
       <ContractFilters
         filters={filters}
-        setFilters={setFilters}
+        onFiltersChange={setFilters}
         contracts={contracts}
       />
 

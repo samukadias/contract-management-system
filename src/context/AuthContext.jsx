@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User } from '@/entities/User';
+import { User } from '../entities/User';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     }, []);
 
-    const login = async (email) => {
+    const login = async (email, password) => {
         try {
             setLoading(true);
             // Buscar usuário pelo email na nossa tabela de usuários
@@ -26,6 +26,12 @@ export const AuthProvider = ({ children }) => {
 
             if (!userFound) {
                 toast.error('Usuário não encontrado. Verifique o email.');
+                return false;
+            }
+
+            // Verificar senha (comparação simples por enquanto)
+            if (userFound.password !== password) {
+                toast.error('Senha incorreta.');
                 return false;
             }
 

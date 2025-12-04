@@ -56,7 +56,7 @@ export class TermoConfirmacao {
 
             return (data || []).map(this.mapFromDB);
         } catch (error) {
-            console.error('Erro ao listar TCs:', error);
+            // console.error('Erro ao listar TCs:', error);
             throw error;
         }
     }
@@ -73,7 +73,7 @@ export class TermoConfirmacao {
 
             return this.mapFromDB(data);
         } catch (error) {
-            console.error('Erro ao buscar TC:', error);
+            // console.error('Erro ao buscar TC:', error);
             throw error;
         }
     }
@@ -92,7 +92,7 @@ export class TermoConfirmacao {
 
             return this.mapFromDB(data);
         } catch (error) {
-            console.error('Erro ao criar TC:', error);
+            // console.error('Erro ao criar TC:', error);
             throw error;
         }
     }
@@ -113,7 +113,7 @@ export class TermoConfirmacao {
 
             return this.mapFromDB(data);
         } catch (error) {
-            console.error('Erro ao atualizar TC:', error);
+            // console.error('Erro ao atualizar TC:', error);
             throw error;
         }
     }
@@ -129,7 +129,7 @@ export class TermoConfirmacao {
 
             return true;
         } catch (error) {
-            console.error('Erro ao deletar TC:', error);
+            // console.error('Erro ao deletar TC:', error);
             throw error;
         }
     }
@@ -145,7 +145,7 @@ export class TermoConfirmacao {
             if (error) throw error;
             return true;
         } catch (error) {
-            console.error('Erro ao limpar TCs:', error);
+            // console.error('Erro ao limpar TCs:', error);
             throw error;
         }
     }
@@ -159,13 +159,13 @@ export class TermoConfirmacao {
         try {
             const localData = localStorage.getItem(this.STORAGE_KEY);
             if (!localData) {
-                console.log('Nenhum dado de TC no localStorage para migrar.');
+                // console.log('Nenhum dado de TC no localStorage para migrar.');
                 return { success: true, count: 0 };
             }
 
             const tcs = JSON.parse(localData);
             if (!Array.isArray(tcs) || tcs.length === 0) {
-                console.log('Nenhum TC válido para migrar.');
+                // console.log('Nenhum TC válido para migrar.');
                 return { success: true, count: 0 };
             }
 
@@ -179,10 +179,10 @@ export class TermoConfirmacao {
 
             if (error) throw error;
 
-            console.log(`${data.length} TCs migrados com sucesso!`);
+            // console.log(`${data.length} TCs migrados com sucesso!`);
             return { success: true, count: data.length };
         } catch (error) {
-            console.error('Erro ao migrar TCs:', error);
+            // console.error('Erro ao migrar TCs:', error);
             return { success: false, error: error.message };
         }
     }

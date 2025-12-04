@@ -1,0 +1,21 @@
+-- Adicionar colunas faltantes na tabela contracts
+ALTER TABLE public.contracts
+ADD COLUMN IF NOT EXISTS grupo_cliente TEXT,
+ADD COLUMN IF NOT EXISTS termo TEXT,
+ADD COLUMN IF NOT EXISTS tipo_aditamento TEXT,
+ADD COLUMN IF NOT EXISTS etapa TEXT,
+ADD COLUMN IF NOT EXISTS data_inicio_efetividade DATE,
+ADD COLUMN IF NOT EXISTS data_limite_andamento DATE,
+ADD COLUMN IF NOT EXISTS valor_faturado NUMERIC DEFAULT 0,
+ADD COLUMN IF NOT EXISTS valor_cancelado NUMERIC DEFAULT 0,
+ADD COLUMN IF NOT EXISTS valor_a_faturar NUMERIC DEFAULT 0,
+ADD COLUMN IF NOT EXISTS valor_novo_contrato NUMERIC DEFAULT 0,
+ADD COLUMN IF NOT EXISTS observacao TEXT,
+ADD COLUMN IF NOT EXISTS numero_processo_sei_nosso TEXT,
+ADD COLUMN IF NOT EXISTS numero_processo_sei_cliente TEXT,
+ADD COLUMN IF NOT EXISTS contrato_cliente TEXT,
+ADD COLUMN IF NOT EXISTS contrato_anterior TEXT,
+ADD COLUMN IF NOT EXISTS numero_pnpp_crm TEXT,
+ADD COLUMN IF NOT EXISTS sei TEXT,
+ADD COLUMN IF NOT EXISTS contrato_novo TEXT,
+ADD COLUMN IF NOT EXISTS termo_novo TEXT;

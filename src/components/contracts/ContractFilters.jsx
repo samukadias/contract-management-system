@@ -47,11 +47,11 @@ export default function ContractFilters({ filters, onFiltersChange }) {
           </div>
 
           <div className="space-y-2">
-            <Label>Cliente</Label>
+            <Label>Busca Geral</Label>
             <Input
-              placeholder="Filtrar por cliente..."
-              value={filters.cliente}
-              onChange={(e) => updateFilter("cliente", e.target.value)}
+              placeholder="Buscar por Contrato, Cliente, Analista, ESP..."
+              value={filters.search}
+              onChange={(e) => updateFilter("search", e.target.value)}
             />
           </div>
         </div>

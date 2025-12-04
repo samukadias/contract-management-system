@@ -9,16 +9,17 @@ import { Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
 
 export default function Login() {
     const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [isLoggingIn, setIsLoggingIn] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        if (!email) return;
+        if (!email || !password) return;
 
         setIsLoggingIn(true);
-        const success = await login(email);
+        const success = await login(email, password);
 
         if (success) {
             // O redirecionamento será tratado pelo componente de rotas protegidas ou aqui mesmo
@@ -59,6 +60,22 @@ export default function Login() {
                                     className="pl-10 h-11 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 transition-all"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="password" className="text-gray-700">Senha</Label>
+                            <div className="relative">
+                                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                <Input
+                                    id="password"
+                                    placeholder="••••••••"
+                                    type="password"
+                                    autoComplete="current-password"
+                                    className="pl-10 h-11 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500 transition-all"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     required
                                 />
                             </div>

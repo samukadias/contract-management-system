@@ -58,6 +58,19 @@ const UserForm = ({ formData, setFormData, onSubmit, isEdit = false, resetForm, 
         </div>
 
         <div className="space-y-2">
+            <Label htmlFor="password">{isEdit ? "Nova Senha (opcional)" : "Senha *"}</Label>
+            <Input
+                id="password"
+                type="password"
+                value={formData.password || ""}
+                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                placeholder={isEdit ? "Deixe em branco para manter a atual" : "Digite a senha"}
+                required={!isEdit}
+            />
+            {isEdit && <p className="text-xs text-gray-500">Preencha apenas se quiser alterar a senha.</p>}
+        </div>
+
+        <div className="space-y-2">
             <Label htmlFor="perfil">Perfil de Acesso *</Label>
             <Select
                 value={formData.perfil}
@@ -128,6 +141,7 @@ export default function UserManagement() {
     const [formData, setFormData] = useState({
         full_name: "",
         email: "",
+        password: "",
         perfil: "ANALISTA",
         nome_cliente: "",
         departamento: ""
@@ -143,7 +157,13 @@ export default function UserManagement() {
     };
 
     const handleEditUser = async () => {
-        updateUser.mutate({ id: editingUser.id, data: formData }, {
+        // Remover senha se estiver vazia para não sobrescrever
+        const dataToUpdate = { ...formData };
+        if (!dataToUpdate.password) {
+            delete dataToUpdate.password;
+        }
+
+        updateUser.mutate({ id: editingUser.id, data: dataToUpdate }, {
             onSuccess: () => {
                 setShowEditDialog(false);
                 setEditingUser(null);
@@ -157,6 +177,7 @@ export default function UserManagement() {
         setFormData({
             full_name: user.full_name || "",
             email: user.email || "",
+            password: "", // Senha começa vazia na edição
             perfil: user.perfil || "ANALISTA",
             nome_cliente: user.nome_cliente || "",
             departamento: user.departamento || ""
@@ -168,6 +189,7 @@ export default function UserManagement() {
         setFormData({
             full_name: "",
             email: "",
+            password: "",
             perfil: "ANALISTA",
             nome_cliente: "",
             departamento: ""

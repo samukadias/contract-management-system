@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ContractForm({
   initialData = {},
@@ -13,7 +14,8 @@ export default function ContractForm({
   submitButtonText = "Salvar",
   isEdit = false,
   users = [],
-  currentUser = null
+  currentUser = null,
+  executedValue
 }) {
   const [formData, setFormData] = useState({
     analista_responsavel: "",
@@ -52,6 +54,16 @@ export default function ContractForm({
       setFormData(prev => ({ ...prev, analista_responsavel: currentUser.full_name }));
     }
   }, [isEdit, currentUser]);
+
+  // Atualizar valor faturado se vier calculado de fora (via TCs)
+  useEffect(() => {
+    if (executedValue !== undefined && executedValue !== null) {
+      setFormData(prev => ({
+        ...prev,
+        valor_faturado: executedValue
+      }));
+    }
+  }, [executedValue]);
 
   // Calcular automaticamente o Valor a Faturar
   useEffect(() => {
@@ -149,395 +161,421 @@ export default function ContractForm({
   const isGestor = currentUser?.perfil === "GESTOR";
   const canEditBasicInfo = !isEdit || isGestor;
 
+
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      {/* Informações Básicas */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Informações Básicas</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="analista_responsavel">Analista Responsável *</Label>
-            <Select
-              value={formData.analista_responsavel}
-              onValueChange={(value) => handleInputChange("analista_responsavel", value)}
-              disabled={!canEditBasicInfo}
-              required
-            >
-              <SelectTrigger className={!canEditBasicInfo ? "bg-gray-100" : ""}>
-                <SelectValue placeholder="Selecione um analista" />
-              </SelectTrigger>
-              <SelectContent>
-                {users.map(user => (
-                  <SelectItem key={user.id} value={user.full_name}>
-                    {user.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="cliente">Cliente *</Label>
-            <Input
-              id="cliente"
-              value={formData.cliente}
-              onChange={(e) => handleInputChange("cliente", e.target.value)}
-              required
-              disabled={!canEditBasicInfo}
-              className={!canEditBasicInfo ? "bg-gray-100" : ""}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="grupo_cliente">Grupo Cliente</Label>
-            <Input
-              id="grupo_cliente"
-              value={formData.grupo_cliente}
-              onChange={(e) => handleInputChange("grupo_cliente", e.target.value)}
-              disabled={!canEditBasicInfo}
-              className={!canEditBasicInfo ? "bg-gray-100" : ""}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="contrato">Número do Contrato *</Label>
-            <Input
-              id="contrato"
-              value={formData.contrato}
-              onChange={(e) => handleInputChange("contrato", e.target.value)}
-              required
-              disabled={!canEditBasicInfo}
-              className={!canEditBasicInfo ? "bg-gray-100" : ""}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="termo">Termo</Label>
-            <Input
-              id="termo"
-              value={formData.termo}
-              onChange={(e) => handleInputChange("termo", e.target.value)}
-              disabled={!canEditBasicInfo}
-              className={!canEditBasicInfo ? "bg-gray-100" : ""}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
-            <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)} disabled={!canEditBasicInfo}>
-              <SelectTrigger className={!canEditBasicInfo ? "bg-gray-100" : ""}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Ativo">Ativo</SelectItem>
-                <SelectItem value="Expirado">Expirado</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <Tabs defaultValue="basic" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 mb-4">
+          <TabsTrigger value="basic">Geral</TabsTrigger>
+          <TabsTrigger value="process">Tratativa</TabsTrigger>
+          <TabsTrigger value="details">Detalhes</TabsTrigger>
+          <TabsTrigger value="dates">Prazos</TabsTrigger>
+          <TabsTrigger value="financial">Financeiro</TabsTrigger>
+          <TabsTrigger value="notes">Observações</TabsTrigger>
+        </TabsList>
 
-      {/* Tipo de Tratativa e Etapa */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Tratativa e Etapa</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="tipo_tratativa">Tipo de Tratativa</Label>
-              <Select value={formData.tipo_tratativa} onValueChange={(value) => handleInputChange("tipo_tratativa", value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PRORROGAÇÃO">PRORROGAÇÃO</SelectItem>
-                  <SelectItem value="RENOVAÇÃO">RENOVAÇÃO</SelectItem>
-                  <SelectItem value="ADITAMENTO">ADITAMENTO</SelectItem>
-                  <SelectItem value="CANCELAMENTO">CANCELAMENTO</SelectItem>
-                  <SelectItem value="SEM TRATATIVA">SEM TRATATIVA</SelectItem>
-                  <SelectItem value="FINALIZADA">FINALIZADA</SelectItem>
-                  <SelectItem value="DESCONTINUIDADE">DESCONTINUIDADE</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="etapa">Etapa</Label>
-              <Select
-                value={formData.etapa}
-                onValueChange={(value) => handleInputChange("etapa", value)}
-                disabled={!isEtapaEnabled}
-              >
-                <SelectTrigger className={!isEtapaEnabled ? "bg-gray-100" : ""}>
-                  <SelectValue placeholder={isEtapaEnabled ? "Selecione uma etapa" : "Selecione primeiro o tipo de tratativa"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {etapaOptions.map((etapa) => (
-                    <SelectItem key={etapa} value={etapa}>
-                      {etapa}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {formData.tipo_tratativa === "ADITAMENTO" && (
-            <div className="space-y-2">
-              <Label htmlFor="tipo_aditamento">Tipo de Aditamento</Label>
-              <Select value={formData.tipo_aditamento} onValueChange={(value) => handleInputChange("tipo_aditamento", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo de aditamento" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Aditamento com Expansão">Aditamento com Expansão</SelectItem>
-                  <SelectItem value="Aditamento com Redução">Aditamento com Redução</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Detalhes do Contrato */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Detalhes do Contrato</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="objeto_contrato">Objeto do Contrato</Label>
-            <Textarea
-              id="objeto_contrato"
-              value={formData.objeto_contrato}
-              onChange={(e) => handleInputChange("objeto_contrato", e.target.value)}
-              rows={3}
-              disabled={!canEditBasicInfo}
-              className={!canEditBasicInfo ? "bg-gray-100" : ""}
-            />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="numero_processo_sei_nosso">Processo SEI Nosso</Label>
-              <Input
-                id="numero_processo_sei_nosso"
-                value={formData.numero_processo_sei_nosso}
-                onChange={(e) => handleInputChange("numero_processo_sei_nosso", e.target.value)}
-                disabled={!canEditBasicInfo}
-                className={!canEditBasicInfo ? "bg-gray-100" : ""}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="numero_processo_sei_cliente">Processo SEI Cliente</Label>
-              <Input
-                id="numero_processo_sei_cliente"
-                value={formData.numero_processo_sei_cliente}
-                onChange={(e) => handleInputChange("numero_processo_sei_cliente", e.target.value)}
-                disabled={!canEditBasicInfo}
-                className={!canEditBasicInfo ? "bg-gray-100" : ""}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Datas */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Prazos e Datas</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="data_inicio_efetividade">Data Início Efetividade</Label>
-            <Input
-              id="data_inicio_efetividade"
-              type="date"
-              value={formData.data_inicio_efetividade}
-              onChange={(e) => handleInputChange("data_inicio_efetividade", e.target.value)}
-              disabled={!canEditBasicInfo}
-              className={!canEditBasicInfo ? "bg-gray-100" : ""}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="data_fim_efetividade">Data Fim Efetividade</Label>
-            <Input
-              id="data_fim_efetividade"
-              type="date"
-              value={formData.data_fim_efetividade}
-              onChange={(e) => handleInputChange("data_fim_efetividade", e.target.value)}
-              disabled={!canEditBasicInfo}
-              className={!canEditBasicInfo ? "bg-gray-100" : ""}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="data_limite_andamento">Data Limite Andamento</Label>
-            <Input
-              id="data_limite_andamento"
-              type="date"
-              value={formData.data_limite_andamento}
-              onChange={(e) => handleInputChange("data_limite_andamento", e.target.value)}
-              disabled={!canEditBasicInfo}
-              className={!canEditBasicInfo ? "bg-gray-100" : ""}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Valores Financeiros */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Valores Financeiros</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {isEdit && !isGestor ? (
-            <>
+        {/* Informações Básicas */}
+        <TabsContent value="basic">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Informações Básicas</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Valor do Contrato</Label>
-                <div className="p-2 bg-gray-100 border rounded-md">
-                  {formatCurrency(formData.valor_contrato)}
-                </div>
+                <Label htmlFor="analista_responsavel">Analista Responsável *</Label>
+                <Select
+                  value={formData.analista_responsavel}
+                  onValueChange={(value) => handleInputChange("analista_responsavel", value)}
+                  disabled={!canEditBasicInfo}
+                  required
+                >
+                  <SelectTrigger className={!canEditBasicInfo ? "bg-gray-100" : ""}>
+                    <SelectValue placeholder="Selecione um analista" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map(user => (
+                      <SelectItem key={user.id} value={user.full_name}>
+                        {user.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label>Valor Faturado</Label>
-                <div className="p-2 bg-gray-100 border rounded-md">
-                  {formatCurrency(formData.valor_faturado)}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Valor Cancelado</Label>
-                <div className="p-2 bg-gray-100 border rounded-md">
-                  {formatCurrency(formData.valor_cancelado)}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Valor a Faturar</Label>
-                <div className="p-2 bg-gray-100 border rounded-md">
-                  {formatCurrency(formData.valor_a_faturar)}
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="valor_contrato">Valor do Contrato</Label>
+                <Label htmlFor="cliente">Cliente *</Label>
                 <Input
-                  id="valor_contrato"
-                  type="number"
-                  step="0.01"
-                  value={formData.valor_contrato}
-                  onChange={(e) => handleInputChange("valor_contrato", e.target.value)}
+                  id="cliente"
+                  value={formData.cliente}
+                  onChange={(e) => handleInputChange("cliente", e.target.value)}
+                  required
+                  disabled={!canEditBasicInfo}
+                  className={!canEditBasicInfo ? "bg-gray-100" : ""}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="valor_faturado">Valor Faturado</Label>
+                <Label htmlFor="grupo_cliente">Grupo Cliente</Label>
                 <Input
-                  id="valor_faturado"
-                  type="number"
-                  step="0.01"
-                  value={formData.valor_faturado}
-                  onChange={(e) => handleInputChange("valor_faturado", e.target.value)}
+                  id="grupo_cliente"
+                  value={formData.grupo_cliente}
+                  onChange={(e) => handleInputChange("grupo_cliente", e.target.value)}
+                  disabled={!canEditBasicInfo}
+                  className={!canEditBasicInfo ? "bg-gray-100" : ""}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="valor_cancelado">Valor Cancelado</Label>
+                <Label htmlFor="contrato">Número do Contrato *</Label>
                 <Input
-                  id="valor_cancelado"
-                  type="number"
-                  step="0.01"
-                  value={formData.valor_cancelado}
-                  onChange={(e) => handleInputChange("valor_cancelado", e.target.value)}
+                  id="contrato"
+                  value={formData.contrato}
+                  onChange={(e) => handleInputChange("contrato", e.target.value)}
+                  required
+                  disabled={!canEditBasicInfo}
+                  className={!canEditBasicInfo ? "bg-gray-100" : ""}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="valor_a_faturar">
-                  Valor a Faturar
-                  <span className="text-xs text-gray-500 ml-2">(Calculado automaticamente)</span>
-                </Label>
+                <Label htmlFor="termo">Termo</Label>
                 <Input
-                  id="valor_a_faturar"
-                  type="number"
-                  step="0.01"
-                  value={formData.valor_a_faturar}
-                  disabled
-                  className="bg-gray-50 cursor-not-allowed"
+                  id="termo"
+                  value={formData.termo}
+                  onChange={(e) => handleInputChange("termo", e.target.value)}
+                  disabled={!canEditBasicInfo}
+                  className={!canEditBasicInfo ? "bg-gray-100" : ""}
                 />
               </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)} disabled={!canEditBasicInfo}>
+                  <SelectTrigger className={!canEditBasicInfo ? "bg-gray-100" : ""}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Ativo">Ativo</SelectItem>
+                    <SelectItem value="Expirado">Expirado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Informações Adicionais */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Informações Adicionais</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="contrato_cliente">Contrato Cliente</Label>
-            <Input
-              id="contrato_cliente"
-              value={formData.contrato_cliente}
-              onChange={(e) => handleInputChange("contrato_cliente", e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="contrato_anterior">Contrato Anterior</Label>
-            <Input
-              id="contrato_anterior"
-              value={formData.contrato_anterior}
-              onChange={(e) => handleInputChange("contrato_anterior", e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="numero_pnpp_crm">Número PNPP/CRM</Label>
-            <Input
-              id="numero_pnpp_crm"
-              value={formData.numero_pnpp_crm}
-              onChange={(e) => handleInputChange("numero_pnpp_crm", e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="sei">SEI</Label>
-            <Input
-              id="sei"
-              value={formData.sei}
-              onChange={(e) => handleInputChange("sei", e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="esp">ESP</Label>
-            <Input
-              id="esp"
-              value={formData.esp}
-              onChange={(e) => handleInputChange("esp", e.target.value)}
-            />
-          </div>
-        </CardContent>
-      </Card>
+        {/* Tipo de Tratativa e Etapa */}
+        <TabsContent value="process">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Tratativa e Etapa</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="tipo_tratativa">Tipo de Tratativa</Label>
+                  <Select value={formData.tipo_tratativa} onValueChange={(value) => handleInputChange("tipo_tratativa", value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PRORROGAÇÃO">PRORROGAÇÃO</SelectItem>
+                      <SelectItem value="RENOVAÇÃO">RENOVAÇÃO</SelectItem>
+                      <SelectItem value="ADITAMENTO">ADITAMENTO</SelectItem>
+                      <SelectItem value="CANCELAMENTO">CANCELAMENTO</SelectItem>
+                      <SelectItem value="SEM TRATATIVA">SEM TRATATIVA</SelectItem>
+                      <SelectItem value="FINALIZADA">FINALIZADA</SelectItem>
+                      <SelectItem value="DESCONTINUIDADE">DESCONTINUIDADE</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-      {/* Observações */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Observações</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="observacao">Observações</Label>
-            <Textarea
-              id="observacao"
-              value={formData.observacao}
-              onChange={(e) => handleInputChange("observacao", e.target.value)}
-              rows={4}
-              placeholder="Digite observações sobre o contrato..."
-            />
-          </div>
-        </CardContent>
-      </Card>
+                <div className="space-y-2">
+                  <Label htmlFor="etapa">Etapa</Label>
+                  <Select
+                    value={formData.etapa}
+                    onValueChange={(value) => handleInputChange("etapa", value)}
+                    disabled={!isEtapaEnabled}
+                  >
+                    <SelectTrigger className={!isEtapaEnabled ? "bg-gray-100" : ""}>
+                      <SelectValue placeholder={isEtapaEnabled ? "Selecione uma etapa" : "Selecione primeiro o tipo de tratativa"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {etapaOptions.map((etapa) => (
+                        <SelectItem key={etapa} value={etapa}>
+                          {etapa}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-      <div className="flex justify-end">
+              {formData.tipo_tratativa === "ADITAMENTO" && (
+                <div className="space-y-2">
+                  <Label htmlFor="tipo_aditamento">Tipo de Aditamento</Label>
+                  <Select value={formData.tipo_aditamento} onValueChange={(value) => handleInputChange("tipo_aditamento", value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo de aditamento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Aditamento com Expansão">Aditamento com Expansão</SelectItem>
+                      <SelectItem value="Aditamento com Redução">Aditamento com Redução</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Detalhes do Contrato */}
+        <TabsContent value="details">
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Detalhes do Contrato</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="objeto_contrato">Objeto do Contrato</Label>
+                  <Textarea
+                    id="objeto_contrato"
+                    value={formData.objeto_contrato}
+                    onChange={(e) => handleInputChange("objeto_contrato", e.target.value)}
+                    rows={3}
+                    disabled={!canEditBasicInfo}
+                    className={!canEditBasicInfo ? "bg-gray-100" : ""}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="numero_processo_sei_nosso">Processo SEI Nosso</Label>
+                    <Input
+                      id="numero_processo_sei_nosso"
+                      value={formData.numero_processo_sei_nosso}
+                      onChange={(e) => handleInputChange("numero_processo_sei_nosso", e.target.value)}
+                      disabled={!canEditBasicInfo}
+                      className={!canEditBasicInfo ? "bg-gray-100" : ""}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="numero_processo_sei_cliente">Processo SEI Cliente</Label>
+                    <Input
+                      id="numero_processo_sei_cliente"
+                      value={formData.numero_processo_sei_cliente}
+                      onChange={(e) => handleInputChange("numero_processo_sei_cliente", e.target.value)}
+                      disabled={!canEditBasicInfo}
+                      className={!canEditBasicInfo ? "bg-gray-100" : ""}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Informações Adicionais</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="contrato_cliente">Contrato Cliente</Label>
+                  <Input
+                    id="contrato_cliente"
+                    value={formData.contrato_cliente}
+                    onChange={(e) => handleInputChange("contrato_cliente", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contrato_anterior">Contrato Anterior</Label>
+                  <Input
+                    id="contrato_anterior"
+                    value={formData.contrato_anterior}
+                    onChange={(e) => handleInputChange("contrato_anterior", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="numero_pnpp_crm">Número PNPP/CRM</Label>
+                  <Input
+                    id="numero_pnpp_crm"
+                    value={formData.numero_pnpp_crm}
+                    onChange={(e) => handleInputChange("numero_pnpp_crm", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sei">SEI</Label>
+                  <Input
+                    id="sei"
+                    value={formData.sei}
+                    onChange={(e) => handleInputChange("sei", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="esp">ESP</Label>
+                  <Input
+                    id="esp"
+                    value={formData.esp}
+                    onChange={(e) => handleInputChange("esp", e.target.value)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Datas */}
+        <TabsContent value="dates">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Prazos e Datas</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="data_inicio_efetividade">Data Início Efetividade</Label>
+                <Input
+                  id="data_inicio_efetividade"
+                  type="date"
+                  value={formData.data_inicio_efetividade}
+                  onChange={(e) => handleInputChange("data_inicio_efetividade", e.target.value)}
+                  disabled={!canEditBasicInfo}
+                  className={!canEditBasicInfo ? "bg-gray-100" : ""}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="data_fim_efetividade">Data Fim Efetividade</Label>
+                <Input
+                  id="data_fim_efetividade"
+                  type="date"
+                  value={formData.data_fim_efetividade}
+                  onChange={(e) => handleInputChange("data_fim_efetividade", e.target.value)}
+                  disabled={!canEditBasicInfo}
+                  className={!canEditBasicInfo ? "bg-gray-100" : ""}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="data_limite_andamento">Data Limite Andamento</Label>
+                <Input
+                  id="data_limite_andamento"
+                  type="date"
+                  value={formData.data_limite_andamento}
+                  onChange={(e) => handleInputChange("data_limite_andamento", e.target.value)}
+                  disabled={!canEditBasicInfo}
+                  className={!canEditBasicInfo ? "bg-gray-100" : ""}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Valores Financeiros */}
+        <TabsContent value="financial">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Valores Financeiros</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {isEdit && !isGestor ? (
+                <>
+                  <div className="space-y-2">
+                    <Label>Valor do Contrato</Label>
+                    <div className="p-2 bg-gray-100 border rounded-md">
+                      {formatCurrency(formData.valor_contrato)}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Valor Faturado</Label>
+                    <div className="p-2 bg-gray-100 border rounded-md">
+                      {formatCurrency(formData.valor_faturado)}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Valor Cancelado</Label>
+                    <div className="p-2 bg-gray-100 border rounded-md">
+                      {formatCurrency(formData.valor_cancelado)}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Valor a Faturar</Label>
+                    <div className="p-2 bg-gray-100 border rounded-md">
+                      {formatCurrency(formData.valor_a_faturar)}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="valor_contrato">Valor do Contrato</Label>
+                    <Input
+                      id="valor_contrato"
+                      type="number"
+                      step="0.01"
+                      value={formData.valor_contrato}
+                      onChange={(e) => handleInputChange("valor_contrato", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="valor_faturado">Valor Faturado</Label>
+                    <Input
+                      id="valor_faturado"
+                      type="number"
+                      step="0.01"
+                      value={formData.valor_faturado}
+                      onChange={(e) => handleInputChange("valor_faturado", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="valor_cancelado">Valor Cancelado</Label>
+                    <Input
+                      id="valor_cancelado"
+                      type="number"
+                      step="0.01"
+                      value={formData.valor_cancelado}
+                      onChange={(e) => handleInputChange("valor_cancelado", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="valor_a_faturar">
+                      Valor a Faturar
+                      <span className="text-xs text-gray-500 ml-2">(Calculado automaticamente)</span>
+                    </Label>
+                    <Input
+                      id="valor_a_faturar"
+                      type="number"
+                      step="0.01"
+                      value={formData.valor_a_faturar}
+                      disabled
+                      className="bg-gray-50 cursor-not-allowed"
+                    />
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Observações */}
+        <TabsContent value="notes">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Observações</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="observacao">Observações</Label>
+                <Textarea
+                  id="observacao"
+                  value={formData.observacao}
+                  onChange={(e) => handleInputChange("observacao", e.target.value)}
+                  rows={4}
+                  placeholder="Digite observações sobre o contrato..."
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <div className="flex justify-end pt-4 border-t">
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="bg-blue-600 hover:bg-blue-700"
+          className="bg-blue-600 hover:bg-blue-700 min-w-[150px]"
         >
           {isSubmitting ? "Salvando..." : submitButtonText}
         </Button>

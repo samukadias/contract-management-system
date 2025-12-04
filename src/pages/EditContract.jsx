@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Contract } from "@/entities/Contract";
 import { User } from "@/entities/User";
+import { TermoConfirmacao } from "@/entities/TermoConfirmacao";
 import { useNavigate, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { ArrowLeft, Save, Trash2 } from "lucide-react";
@@ -32,6 +33,7 @@ export default function EditContract() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [users, setUsers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [executedValue, setExecutedValue] = useState(0);
 
   useEffect(() => {
     const fetchContractAndUsers = async () => {
@@ -39,40 +41,41 @@ export default function EditContract() {
       try {
         const params = new URLSearchParams(location.search);
         const contractId = params.get("id");
-        console.log("EditContract - ID from URL:", contractId);
 
         if (!contractId) {
-          console.log("EditContract - No ID found in URL, redirecting...");
           navigate(createPageUrl("Contracts"));
           return;
         }
 
-        // Find contract by ID (handle both string and number)
-        const allContracts = await Contract.list();
-        console.log("EditContract - All Contracts IDs:", allContracts.map(c => c.id));
+        const [allContracts, allUsers, loggedUser, allTCs] = await Promise.all([
+          Contract.list(),
+          User.list(),
+          User.me(),
+          TermoConfirmacao.list()
+        ]);
 
         const contractData = allContracts.find(c => String(c.id) === String(contractId));
-        console.log("EditContract - Found Contract:", contractData);
 
         if (!contractData) {
-          console.error("Contrato não encontrado para o ID:", contractId);
           setContract(null);
           return;
         }
-        // Format dates for input[type=date]
-        if (contractData.data_inicio_efetividade) {
-          contractData.data_inicio_efetividade = contractData.data_inicio_efetividade.split('T')[0];
-        }
-        if (contractData.data_fim_efetividade) {
-          contractData.data_fim_efetividade = contractData.data_fim_efetividade.split('T')[0];
-        }
-        if (contractData.data_limite_andamento) {
-          contractData.data_limite_andamento = contractData.data_limite_andamento.split('T')[0];
-        }
-        setContract(contractData);
 
-        const allUsers = await User.list();
-        const loggedUser = await User.me();
+        // Format dates
+        if (contractData.data_inicio_efetividade) contractData.data_inicio_efetividade = contractData.data_inicio_efetividade.split('T')[0];
+        if (contractData.data_fim_efetividade) contractData.data_fim_efetividade = contractData.data_fim_efetividade.split('T')[0];
+        if (contractData.data_limite_andamento) contractData.data_limite_andamento = contractData.data_limite_andamento.split('T')[0];
+
+        // Calculate executed value from TCs
+        const contractTCs = allTCs.filter(tc => tc.contrato_associado_pd === contractData.contrato);
+        const totalTCsValue = contractTCs.reduce((sum, tc) => sum + (tc.valor_total || 0), 0);
+        setExecutedValue(totalTCsValue);
+
+        // Update contract data with calculated values if needed, or just pass separately
+        contractData.valor_faturado = totalTCsValue;
+        contractData.valor_a_faturar = (contractData.valor_contrato || 0) - totalTCsValue;
+
+        setContract(contractData);
 
         const filteredUsers = allUsers.filter(
           (user) => user.perfil === "ANALISTA" || user.perfil === "GESTOR"
@@ -83,7 +86,7 @@ export default function EditContract() {
 
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
-        setContract(null); // Ensure contract is null if an error occurs
+        setContract(null);
       } finally {
         setIsLoading(false);
       }
@@ -244,6 +247,7 @@ export default function EditContract() {
             isEdit={true}
             users={users}
             currentUser={currentUser}
+            executedValue={executedValue}
           />
         </CardContent>
       </Card>
