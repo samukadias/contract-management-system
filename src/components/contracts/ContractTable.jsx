@@ -152,7 +152,10 @@ export default function ContractTable({ contracts, isLoading, onContractUpdate }
                   <TableCell>
                     {(() => {
                       if (!contract.data_fim_efetividade) return "-";
-                      const date = new Date(contract.data_fim_efetividade);
+                      const dateStr = contract.data_fim_efetividade.includes("T")
+                        ? contract.data_fim_efetividade
+                        : contract.data_fim_efetividade + "T00:00:00";
+                      const date = new Date(dateStr);
                       return isNaN(date.getTime()) ? "Data Inválida" : format(date, "dd/MM/yyyy");
                     })()}
                   </TableCell>

@@ -140,13 +140,17 @@ export default function ViewContract() {
               {contract.data_inicio_efetividade && (
                 <div>
                   <p className="text-sm font-medium text-gray-600 mb-1">Data Início</p>
-                  <p className="text-gray-900">{format(new Date(contract.data_inicio_efetividade), "dd/MM/yyyy")}</p>
+                  <p className="text-gray-900">
+                    {format(new Date(contract.data_inicio_efetividade.includes("T") ? contract.data_inicio_efetividade : contract.data_inicio_efetividade + "T00:00:00"), "dd/MM/yyyy")}
+                  </p>
                 </div>
               )}
               {contract.data_fim_efetividade && (
                 <div>
                   <p className="text-sm font-medium text-gray-600 mb-1">Data Fim</p>
-                  <p className="text-gray-900">{format(new Date(contract.data_fim_efetividade), "dd/MM/yyyy")}</p>
+                  <p className="text-gray-900">
+                    {format(new Date(contract.data_fim_efetividade.includes("T") ? contract.data_fim_efetividade : contract.data_fim_efetividade + "T00:00:00"), "dd/MM/yyyy")}
+                  </p>
                 </div>
               )}
 
