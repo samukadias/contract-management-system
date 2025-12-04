@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import CurrencyInput from "@/components/ui/currency-input";
 
 export default function ContractForm({
   initialData = {},
@@ -463,6 +464,8 @@ export default function ContractForm({
           </Card>
         </TabsContent>
 
+
+
         {/* Valores Financeiros */}
         <TabsContent value="financial">
           <Card>
@@ -501,32 +504,26 @@ export default function ContractForm({
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="valor_contrato">Valor do Contrato</Label>
-                    <Input
+                    <CurrencyInput
                       id="valor_contrato"
-                      type="number"
-                      step="0.01"
                       value={formData.valor_contrato}
-                      onChange={(e) => handleInputChange("valor_contrato", e.target.value)}
+                      onChange={(value) => handleInputChange("valor_contrato", value)}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="valor_faturado">Valor Faturado</Label>
-                    <Input
+                    <CurrencyInput
                       id="valor_faturado"
-                      type="number"
-                      step="0.01"
                       value={formData.valor_faturado}
-                      onChange={(e) => handleInputChange("valor_faturado", e.target.value)}
+                      onChange={(value) => handleInputChange("valor_faturado", value)}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="valor_cancelado">Valor Cancelado</Label>
-                    <Input
+                    <CurrencyInput
                       id="valor_cancelado"
-                      type="number"
-                      step="0.01"
                       value={formData.valor_cancelado}
-                      onChange={(e) => handleInputChange("valor_cancelado", e.target.value)}
+                      onChange={(value) => handleInputChange("valor_cancelado", value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -534,10 +531,8 @@ export default function ContractForm({
                       Valor a Faturar
                       <span className="text-xs text-gray-500 ml-2">(Calculado automaticamente)</span>
                     </Label>
-                    <Input
+                    <CurrencyInput
                       id="valor_a_faturar"
-                      type="number"
-                      step="0.01"
                       value={formData.valor_a_faturar}
                       disabled
                       className="bg-gray-50 cursor-not-allowed"

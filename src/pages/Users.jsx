@@ -29,6 +29,7 @@ import {
 import { Users, Plus, Edit, UserCheck, UserX, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // UserForm component moved outside to prevent re-creation on each render
 const UserForm = ({ formData, setFormData, onSubmit, isEdit = false, resetForm, setShowCreateDialog, setShowEditDialog, setEditingUser }) => (
@@ -128,6 +129,121 @@ const UserForm = ({ formData, setFormData, onSubmit, isEdit = false, resetForm, 
         </DialogFooter>
     </div>
 );
+
+const UserTable = ({ users, isLoading, getRoleColor, onEdit, onDelete }) => {
+    if (isLoading) {
+        return (
+            <div className="space-y-3">
+                {Array(5).fill(0).map((_, i) => (
+                    <div key={i} className="flex justify-between items-center p-4 border rounded-lg">
+                        <div className="space-y-2">
+                            <Skeleton className="h-4 w-48" />
+                            <Skeleton className="h-3 w-32" />
+                        </div>
+                        <Skeleton className="h-6 w-20 rounded-full" />
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    if (users.length === 0) {
+        return (
+            <div className="text-center py-10 text-gray-500">
+                Nenhum usuário encontrado neste perfil.
+            </div>
+        );
+    }
+
+    return (
+        <div className="overflow-x-auto">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Perfil</TableHead>
+                        <TableHead>Cliente/Departamento</TableHead>
+                        <TableHead>Ações</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {users.map((user) => (
+                        <TableRow key={user.id}>
+                            <TableCell className="font-medium">{user.full_name}</TableCell>
+                            <TableCell>{user.email}</TableCell>
+                            <TableCell>
+                                <Badge className={getRoleColor(user.perfil)}>
+                                    {user.perfil}
+                                </Badge>
+                            </TableCell>
+                            <TableCell>
+                                {user.perfil === "CLIENTE" ? user.nome_cliente : user.departamento}
+                            </TableCell>
+                            <TableCell>
+                                <TooltipProvider>
+                                    <div className="flex gap-2">
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => onEdit(user)}
+                                                >
+                                                    <Edit className="w-4 h-4" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Editar</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+
+                                        <AlertDialog>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Excluir</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Tem certeza que deseja excluir o usuário <strong>{user.full_name}</strong>?
+                                                        Esta ação não pode ser desfeita.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction
+                                                        onClick={() => onDelete(user.id)}
+                                                        className="bg-red-600 hover:bg-red-700"
+                                                    >
+                                                        Excluir
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
+                                </TooltipProvider>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </div>
+    );
+};
 
 export default function UserManagement() {
     const { data: users = [], isLoading } = useUsers();
@@ -283,115 +399,69 @@ export default function UserManagement() {
                 </Card>
             </div>
 
-            {/* Lista de Usuários */}
+            {/* Lista de Usuários com Abas */}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Users className="w-5 h-5" />
-                        Lista de Usuários ({users.length})
+                        Lista de Usuários
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {isLoading ? (
-                        <div className="space-y-3">
-                            {Array(5).fill(0).map((_, i) => (
-                                <div key={i} className="flex justify-between items-center p-4 border rounded-lg">
-                                    <div className="space-y-2">
-                                        <Skeleton className="h-4 w-48" />
-                                        <Skeleton className="h-3 w-32" />
-                                    </div>
-                                    <Skeleton className="h-6 w-20 rounded-full" />
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Nome</TableHead>
-                                        <TableHead>Email</TableHead>
-                                        <TableHead>Perfil</TableHead>
-                                        <TableHead>Cliente/Departamento</TableHead>
-                                        <TableHead>Ações</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {users.map((user) => (
-                                        <TableRow key={user.id}>
-                                            <TableCell className="font-medium">{user.full_name}</TableCell>
-                                            <TableCell>{user.email}</TableCell>
-                                            <TableCell>
-                                                <Badge className={getRoleColor(user.perfil)}>
-                                                    {user.perfil}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                {user.perfil === "CLIENTE" ? user.nome_cliente : user.departamento}
-                                            </TableCell>
-                                            <TableCell>
-                                                <TooltipProvider>
-                                                    <div className="flex gap-2">
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={() => openEditDialog(user)}
-                                                                >
-                                                                    <Edit className="w-4 h-4" />
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>
-                                                                <p>Editar</p>
-                                                            </TooltipContent>
-                                                        </Tooltip>
+                    <Tabs defaultValue="todos" className="w-full">
+                        <TabsList className="grid w-full grid-cols-4 mb-4">
+                            <TabsTrigger value="todos">Todos ({users.length})</TabsTrigger>
+                            <TabsTrigger value="analistas">
+                                Analistas ({users.filter(u => u.perfil === "ANALISTA").length})
+                            </TabsTrigger>
+                            <TabsTrigger value="gestores">
+                                Gestores ({users.filter(u => u.perfil === "GESTOR").length})
+                            </TabsTrigger>
+                            <TabsTrigger value="clientes">
+                                Clientes ({users.filter(u => u.perfil === "CLIENTE").length})
+                            </TabsTrigger>
+                        </TabsList>
 
-                                                        <AlertDialog>
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <AlertDialogTrigger asChild>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="icon"
-                                                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                                        >
-                                                                            <Trash2 className="w-4 h-4" />
-                                                                        </Button>
-                                                                    </AlertDialogTrigger>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>
-                                                                    <p>Excluir</p>
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                            <AlertDialogContent>
-                                                                <AlertDialogHeader>
-                                                                    <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-                                                                    <AlertDialogDescription>
-                                                                        Tem certeza que deseja excluir o usuário <strong>{user.full_name}</strong>?
-                                                                        Esta ação não pode ser desfeita.
-                                                                    </AlertDialogDescription>
-                                                                </AlertDialogHeader>
-                                                                <AlertDialogFooter>
-                                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                                    <AlertDialogAction
-                                                                        onClick={() => deleteUser.mutate(user.id)}
-                                                                        className="bg-red-600 hover:bg-red-700"
-                                                                    >
-                                                                        Excluir
-                                                                    </AlertDialogAction>
-                                                                </AlertDialogFooter>
-                                                            </AlertDialogContent>
-                                                        </AlertDialog>
-                                                    </div>
-                                                </TooltipProvider>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    )}
+                        <TabsContent value="todos">
+                            <UserTable
+                                users={users}
+                                isLoading={isLoading}
+                                getRoleColor={getRoleColor}
+                                onEdit={openEditDialog}
+                                onDelete={(id) => deleteUser.mutate(id)}
+                            />
+                        </TabsContent>
+
+                        <TabsContent value="analistas">
+                            <UserTable
+                                users={users.filter(u => u.perfil === "ANALISTA")}
+                                isLoading={isLoading}
+                                getRoleColor={getRoleColor}
+                                onEdit={openEditDialog}
+                                onDelete={(id) => deleteUser.mutate(id)}
+                            />
+                        </TabsContent>
+
+                        <TabsContent value="gestores">
+                            <UserTable
+                                users={users.filter(u => u.perfil === "GESTOR")}
+                                isLoading={isLoading}
+                                getRoleColor={getRoleColor}
+                                onEdit={openEditDialog}
+                                onDelete={(id) => deleteUser.mutate(id)}
+                            />
+                        </TabsContent>
+
+                        <TabsContent value="clientes">
+                            <UserTable
+                                users={users.filter(u => u.perfil === "CLIENTE")}
+                                isLoading={isLoading}
+                                getRoleColor={getRoleColor}
+                                onEdit={openEditDialog}
+                                onDelete={(id) => deleteUser.mutate(id)}
+                            />
+                        </TabsContent>
+                    </Tabs>
                 </CardContent>
             </Card>
 
