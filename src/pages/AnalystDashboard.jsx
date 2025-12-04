@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Contract } from "@/entities/Contract";
-import { TermoConfirmacao } from "@/entities/TermoConfirmacao";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { FileText, AlertTriangle, CheckCircle, Plus, DollarSign, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -23,29 +21,14 @@ export default function AnalystDashboard() {
     const loadData = async () => {
         setIsLoading(true);
         try {
-            const [allContracts, allTCs] = await Promise.all([
-                Contract.list(),
-                TermoConfirmacao.list()
-            ]);
+            const allContracts = await Contract.list();
 
             // Filtrar contratos do analista
             const myContracts = allContracts.filter(c =>
                 c.analista_responsavel?.toLowerCase() === user.full_name?.toLowerCase()
             );
 
-            // Calcular valor a faturar para cada contrato
-            const contractsWithValues = myContracts.map(contract => {
-                const contractTCs = allTCs.filter(tc => tc.contrato_associado_pd === contract.contrato);
-                const totalTCsValue = contractTCs.reduce((sum, tc) => sum + (tc.valor_total || 0), 0);
-
-                return {
-                    ...contract,
-                    valor_executado: totalTCsValue,
-                    valor_a_faturar: (contract.valor_contrato || 0) - totalTCsValue
-                };
-            });
-
-            setContracts(contractsWithValues);
+            setContracts(myContracts);
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
         }
@@ -63,7 +46,9 @@ export default function AnalystDashboard() {
         return isBefore(endDate, twoMonthsFromNow) && endDate >= new Date();
     });
 
+    // Cálculos Financeiros (Soma dos campos dos contratos)
     const totalValue = contracts.reduce((acc, curr) => acc + (curr.valor_contrato || 0), 0);
+    const totalInvoiced = contracts.reduce((acc, curr) => acc + (curr.valor_faturado || 0), 0);
     const totalToInvoice = contracts.reduce((acc, curr) => acc + (curr.valor_a_faturar || 0), 0);
 
     if (isLoading) {
@@ -139,7 +124,7 @@ export default function AnalystDashboard() {
                                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: "compact" }).format(totalValue)}
                                 </h3>
                                 <p className="text-xs text-gray-500 mt-1">
-                                    A faturar: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: "compact" }).format(totalToInvoice)}
+                                    Faturado: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: "compact" }).format(totalInvoiced)}
                                 </p>
                             </div>
                             <div className="p-2 bg-purple-50 rounded-lg">
@@ -175,7 +160,7 @@ export default function AnalystDashboard() {
                                             </div>
                                             <div className="text-right">
                                                 <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 mb-1">
-                                                    Vence em {format(new Date(contract.data_fim_efetividade), "dd/MM/yyyy")}
+                                                    Vence em {format(new Date(contract.data_fim_efetividade.includes("T") ? contract.data_fim_efetividade : contract.data_fim_efetividade + "T00:00:00"), "dd/MM/yyyy")}
                                                 </Badge>
                                                 <Link to={`${createPageUrl("EditContract")}?id=${contract.id}`} className="block text-sm text-blue-600 hover:underline">
                                                     Resolver
@@ -208,12 +193,25 @@ export default function AnalystDashboard() {
 
                             <div className="space-y-2">
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-600">Valor a Faturar</span>
-                                    <span className="font-medium text-green-600">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalToInvoice)}</span>
+                                    <span className="text-gray-600">Valor Faturado</span>
+                                    <span className="font-medium text-green-600">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalInvoiced)}</span>
                                 </div>
                                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                                     <div
                                         className="h-full bg-green-500 rounded-full"
+                                        style={{ width: `${totalValue > 0 ? (totalInvoiced / totalValue) * 100 : 0}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-600">Valor a Faturar</span>
+                                    <span className="font-medium text-orange-600">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalToInvoice)}</span>
+                                </div>
+                                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-orange-500 rounded-full"
                                         style={{ width: `${totalValue > 0 ? (totalToInvoice / totalValue) * 100 : 0}%` }}
                                     ></div>
                                 </div>
