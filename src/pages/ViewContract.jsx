@@ -67,6 +67,10 @@ export default function ViewContract() {
     );
   }
 
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value) || 0);
+  };
+
   const renderField = (label, value, isCurrency = false) => {
     let displayValue = value;
     if (isCurrency) {
@@ -165,35 +169,35 @@ export default function ViewContract() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {contract.valor_contrato && (
+              {!!contract.valor_contrato && (
                 <div>
                   <p className="text-sm font-medium text-gray-600 mb-1">Valor do Contrato</p>
                   <p className="text-xl font-semibold text-gray-900">
-                    R$ {contract.valor_contrato.toLocaleString('pt-BR')}
+                    {formatCurrency(contract.valor_contrato)}
                   </p>
                 </div>
               )}
-              {contract.valor_faturado && (
+              {!!contract.valor_faturado && (
                 <div>
                   <p className="text-sm font-medium text-gray-600 mb-1">Valor Faturado</p>
                   <p className="text-lg text-green-600">
-                    R$ {contract.valor_faturado.toLocaleString('pt-BR')}
+                    {formatCurrency(contract.valor_faturado)}
                   </p>
                 </div>
               )}
-              {contract.valor_a_faturar && (
+              {!!contract.valor_a_faturar && (
                 <div>
                   <p className="text-sm font-medium text-gray-600 mb-1">Valor a Faturar</p>
                   <p className="text-lg text-blue-600">
-                    R$ {contract.valor_a_faturar.toLocaleString('pt-BR')}
+                    {formatCurrency(contract.valor_a_faturar)}
                   </p>
                 </div>
               )}
-              {contract.valor_cancelado && (
+              {!!contract.valor_cancelado && (
                 <div>
                   <p className="text-sm font-medium text-gray-600 mb-1">Valor Cancelado</p>
                   <p className="text-lg text-red-600">
-                    R$ {contract.valor_cancelado.toLocaleString('pt-BR')}
+                    {formatCurrency(contract.valor_cancelado)}
                   </p>
                 </div>
               )}

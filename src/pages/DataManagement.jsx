@@ -4,8 +4,17 @@ import { TermoConfirmacao } from "@/entities/TermoConfirmacao";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Trash2, Database, AlertTriangle, RefreshCw } from "lucide-react";
+import { Trash2, Database, AlertTriangle, RefreshCw, Users, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { supabase } from "@/lib/supabase";
 
 export default function DataManagement() {
   const [contracts, setContracts] = useState([]);
@@ -24,6 +34,12 @@ export default function DataManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [isClearing, setIsClearing] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
+
+  // Transfer States
+  const [analysts, setAnalysts] = useState([]);
+  const [sourceAnalyst, setSourceAnalyst] = useState("");
+  const [targetAnalyst, setTargetAnalyst] = useState("");
+  const [isTransferring, setIsTransferring] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -36,6 +52,11 @@ export default function DataManagement() {
       const tcsData = await TermoConfirmacao.list();
       setContracts(contractsData);
       setTcs(tcsData);
+
+      // Extract unique analysts
+      const uniqueAnalysts = [...new Set(contractsData.map(c => c.analista_responsavel).filter(Boolean))].sort();
+      setAnalysts(uniqueAnalysts);
+
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast.error("Erro ao carregar dados.");
@@ -78,6 +99,52 @@ export default function DataManagement() {
       toast.error("Erro ao migrar dados. Tente novamente.");
     } finally {
       setIsMigrating(false);
+    }
+  };
+
+  const handleTransferPortfolio = async () => {
+    if (!sourceAnalyst || !targetAnalyst) {
+      toast.error("Selecione os analistas de origem e destino.");
+      return;
+    }
+
+    if (sourceAnalyst === targetAnalyst) {
+      toast.error("Os analistas de origem e destino devem ser diferentes.");
+      return;
+    }
+
+    setIsTransferring(true);
+    try {
+      // 1. Get contracts to count
+      const contractsToTransfer = contracts.filter(c => c.analista_responsavel === sourceAnalyst);
+      const count = contractsToTransfer.length;
+
+      if (count === 0) {
+        toast.warning(`O analista ${sourceAnalyst} não possui contratos.`);
+        setIsTransferring(false);
+        return;
+      }
+
+      // 2. Perform Update via Supabase
+      const { error } = await supabase
+        .from('contracts')
+        .update({ analista_responsavel: targetAnalyst })
+        .eq('analista_responsavel', sourceAnalyst);
+
+      if (error) throw error;
+
+      toast.success(`${count} contratos transferidos de ${sourceAnalyst} para ${targetAnalyst}.`);
+
+      // 3. Reset and Reload
+      setSourceAnalyst("");
+      setTargetAnalyst("");
+      await loadData();
+
+    } catch (error) {
+      console.error("Erro na transferência:", error);
+      toast.error("Erro ao transferir carteira.");
+    } finally {
+      setIsTransferring(false);
     }
   };
 
@@ -133,6 +200,102 @@ export default function DataManagement() {
                   Atualizar Dados
                 </Button>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Transferência de Carteira */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-purple-500" />
+              Transferência de Carteira
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <AlertDescription>
+                Transfira todos os contratos de um analista para outro. Útil em casos de férias, desligamento ou redistribuição.
+              </AlertDescription>
+            </Alert>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+              <div className="space-y-2">
+                <Label>Analista de Origem (Quem sai)</Label>
+                <Select value={sourceAnalyst} onValueChange={setSourceAnalyst}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o analista..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {analysts.map(a => (
+                      <SelectItem key={a} value={a}>{a}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-center pb-2 md:pb-0">
+                <ArrowRight className="w-6 h-6 text-gray-400" />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Analista de Destino (Quem assume)</Label>
+                <div className="flex gap-2">
+                  {/* Dropdown for existing */}
+                  <Select value={targetAnalyst} onValueChange={setTargetAnalyst}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Selecione ou digite..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {analysts.filter(a => a !== sourceAnalyst).map(a => (
+                        <SelectItem key={a} value={a}>{a}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {/* Optional: Add a way to type a new name if needed, but simplistic for now */}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Ou digite um novo nome para o destino:</Label>
+              <Input
+                placeholder="Nome do novo analista (opcional)"
+                value={targetAnalyst}
+                onChange={(e) => setTargetAnalyst(e.target.value)}
+              />
+              <p className="text-xs text-gray-500">Selecione na lista acima OU digite um novo nome.</p>
+            </div>
+
+
+            <div className="flex justify-end pt-4">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    className="bg-purple-600 hover:bg-purple-700"
+                    disabled={isTransferring || !sourceAnalyst || !targetAnalyst || sourceAnalyst === targetAnalyst}
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    {isTransferring ? "Transferindo..." : "Realizar Transferência"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar Transferência</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Você está prestes a transferir <strong>TODOS</strong> os contratos de <span className="font-bold text-purple-600">{sourceAnalyst}</span> para <span className="font-bold text-purple-600">{targetAnalyst}</span>.
+                      <br /><br />
+                      Contratos afetados: {contracts.filter(c => c.analista_responsavel === sourceAnalyst).length}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleTransferPortfolio} className="bg-purple-600 hover:bg-purple-700">
+                      Confirmar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </CardContent>
         </Card>
