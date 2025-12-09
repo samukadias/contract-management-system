@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { Contract } from "@/entities/Contract";
-import { ExtractDataFromUploadedFile, UploadFile } from "@/integrations/Core";
+import { UploadFile } from "@/integrations/Core";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, Download, FileText, AlertTriangle, Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import * as XLSX from "xlsx";
 
 export default function ImportExportDialog({ open, onOpenChange, contracts, onImportComplete }) {
   const [isExporting, setIsExporting] = useState(false);
@@ -22,26 +23,23 @@ export default function ImportExportDialog({ open, onOpenChange, contracts, onIm
     setIsExporting(true);
     try {
       const schema = Contract.schema();
-      const csvHeaders = Object.keys(schema.properties);
+      const headers = Object.keys(schema.properties);
 
-      const csvData = contracts.map(contract =>
-        csvHeaders.map(header => {
-          const value = contract[header] || "";
-          // Handle values with commas
-          return `"${String(value).replace(/"/g, '""')}"`;
-        }).join(",")
-      );
+      const data = contracts.map(contract => {
+        const row = {};
+        headers.forEach(header => {
+          row[header] = contract[header];
+        });
+        return row;
+      });
 
-      const csvContent = [csvHeaders.join(","), ...csvData].join("\n");
+      const worksheet = XLSX.utils.json_to_sheet(data, { header: headers });
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Contratos");
 
-      const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' }); // Add BOM for Excel compatibility
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `contratos_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const fileName = `contratos_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+
     } catch (error) {
       console.error("Erro ao exportar:", error);
       setImportStatus({
@@ -56,22 +54,29 @@ export default function ImportExportDialog({ open, onOpenChange, contracts, onIm
     try {
       const schema = Contract.schema();
       const headers = Object.keys(schema.properties);
-      const csvContent = headers.join(",");
-      const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', 'template_importacao_contratos.csv');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+
+      const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
+
+      XLSX.writeFile(workbook, "template_importacao_contratos.xlsx");
     } catch (error) {
       console.error("Erro ao baixar template:", error);
     }
   };
 
-  const parseDate = (dateString) => {
+  const parseDate = (dateInfo) => {
+    if (!dateInfo) return null;
+
+    // Handle Excel serial date
+    if (typeof dateInfo === 'number') {
+      const date = new Date(Math.round((dateInfo - 25569) * 86400 * 1000));
+      return date.toISOString();
+    }
+
+    const dateString = String(dateInfo).trim();
     if (!dateString) return null;
+
     // Try parsing ISO format first
     let date = new Date(dateString);
     if (!isNaN(date.getTime())) return date.toISOString();
@@ -91,43 +96,26 @@ export default function ImportExportDialog({ open, onOpenChange, contracts, onIm
     if (!file) return;
 
     setIsImporting(true);
-    setImportStatus({ type: "info", message: "Enviando arquivo..." });
-    toast.info("Iniciando importação...");
+    setImportStatus({ type: "info", message: "Lendo arquivo..." });
+    toast.info("Iniciando leitura do arquivo...");
 
-    try {
-      // Add timeout handling and retry logic
-      const uploadPromise = UploadFile({ file });
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Upload timeout')), 60000) // 60 second timeout
-      );
+    const reader = new FileReader();
 
-      const { file_url } = await Promise.race([uploadPromise, timeoutPromise]);
+    reader.onload = async (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
 
-      setImportStatus({ type: "info", message: "Processando dados do arquivo..." });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
 
-      const extractPromise = ExtractDataFromUploadedFile({
-        file_url,
-        json_schema: {
-          type: "object",
-          properties: {
-            contracts: {
-              type: "array",
-              items: Contract.schema()
-            }
-          },
-          required: ["contracts"]
+        const rawContracts = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+        if (!rawContracts || rawContracts.length === 0) {
+          throw new Error("O arquivo está vazio ou não pôde ser lido.");
         }
-      });
 
-      const extractTimeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Processing timeout')), 120000) // 2 minute timeout
-      );
-
-      const result = await Promise.race([extractPromise, extractTimeoutPromise]);
-
-      if (result.status === "success" && result.output?.contracts) {
         setImportStatus({ type: "info", message: "Validando e salvando contratos..." });
-        const rawContracts = result.output.contracts;
 
         const processedContracts = rawContracts.map(contract => {
           const processed = { ...contract };
@@ -136,7 +124,7 @@ export default function ImportExportDialog({ open, onOpenChange, contracts, onIm
 
           // Clean numeric fields
           numericFields.forEach(field => {
-            if (processed[field] !== undefined && processed[field] !== null) {
+            if (processed[field] !== undefined && processed[field] !== null && processed[field] !== "") {
               if (typeof processed[field] === 'string') {
                 const cleanedValue = processed[field].replace(/[^\d.,-]/g, '').replace(',', '.');
                 processed[field] = parseFloat(cleanedValue) || 0;
@@ -153,48 +141,42 @@ export default function ImportExportDialog({ open, onOpenChange, contracts, onIm
             processed[field] = parseDate(processed[field]);
           });
 
+          // Ensure required fields are present
           if (!processed.analista_responsavel || !processed.cliente || !processed.contrato) {
-            return null;
+            return null; // Skip invalid rows
           }
 
           return processed;
         }).filter(Boolean);
 
-        if (processedContracts.length === 0 && rawContracts.length > 0) {
+        if (processedContracts.length === 0) {
           const msg = "Nenhum contrato válido encontrado. Verifique se as colunas obrigatórias (analista_responsavel, cliente, contrato) estão preenchidas.";
           setImportStatus({ type: "error", message: msg });
           toast.error(msg);
-        } else if (processedContracts.length > 0) {
+        } else {
           await Contract.bulkCreate(processedContracts);
           const msg = `${processedContracts.length} de ${rawContracts.length} contratos foram importados com sucesso!`;
           setImportStatus({ type: "success", message: msg });
           toast.success(msg);
           onImportComplete();
-        } else {
-          const msg = "O arquivo parece estar vazio ou em um formato incorreto.";
-          setImportStatus({ type: "error", message: msg });
-          toast.error(msg);
         }
-      } else {
-        const msg = `Erro ao extrair dados: ${result.details || 'Verifique o formato do arquivo e os dados.'}`;
+
+      } catch (error) {
+        console.error("Import error:", error);
+        const msg = `Erro ao importar: ${error.message}`;
         setImportStatus({ type: "error", message: msg });
         toast.error(msg);
       }
-    } catch (error) {
-      console.error("Import error:", error);
-      let msg = "Ocorreu um erro inesperado durante a importação.";
+      setIsImporting(false);
+    };
 
-      if (error.message.includes('timeout') || error.message.includes('Timeout')) {
-        msg = "Timeout na importação. O servidor está sobrecarregado. Tente novamente em alguns minutos com um arquivo menor.";
-      } else if (error.message.includes('500') || error.message.includes('DatabaseTimeout')) {
-        msg = "Erro no servidor (500). A plataforma está enfrentando problemas temporários. Tente novamente em alguns minutos.";
-      }
+    reader.onerror = () => {
+      setImportStatus({ type: "error", message: "Erro ao ler o arquivo." });
+      toast.error("Erro ao ler o arquivo.");
+      setIsImporting(false);
+    };
 
-      setImportStatus({ type: "error", message: msg });
-      toast.error(msg);
-    }
-
-    setIsImporting(false);
+    reader.readAsArrayBuffer(file);
     event.target.value = "";
   };
 
@@ -216,7 +198,7 @@ export default function ImportExportDialog({ open, onOpenChange, contracts, onIm
               <FileText className="w-16 h-16 text-blue-500 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Exportar Contratos</h3>
               <p className="text-gray-600 mb-6">
-                Baixe todos os seus contratos em formato CSV.
+                Baixe todos os seus contratos em formato Excel.
               </p>
               <Button
                 onClick={exportToCSV}
@@ -233,30 +215,29 @@ export default function ImportExportDialog({ open, onOpenChange, contracts, onIm
             <Alert>
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Atenção:</strong> Se encontrar erros de timeout ou servidor (500), aguarde alguns minutos e tente novamente.
-                Para arquivos grandes, considere dividir em lotes menores.
+                <strong>Formatos aceitos:</strong> .xlsx, .xls, .csv
               </AlertDescription>
             </Alert>
 
             <div className="text-center py-6 border-2 border-dashed rounded-lg">
               <Upload className="w-16 h-16 text-green-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Importar de CSV</h3>
+              <h3 className="text-lg font-semibold mb-2">Importar Arquivo</h3>
               <p className="text-gray-600 mb-6 text-sm max-w-md mx-auto">
-                Envie um arquivo CSV com os dados dos contratos. Para garantir a compatibilidade, use nosso arquivo de modelo.
+                Envie um arquivo Excel ou CSV com os dados dos contratos.
               </p>
 
               <div className="flex justify-center gap-4">
                 <input
                   type="file"
-                  accept=".csv"
+                  accept=".csv, .xlsx, .xls"
                   onChange={handleFileImport}
                   className="hidden"
-                  id="csv-upload"
+                  id="file-upload"
                   disabled={isImporting}
                 />
 
                 <Button
-                  onClick={() => document.getElementById('csv-upload').click()}
+                  onClick={() => document.getElementById('file-upload').click()}
                   disabled={isImporting}
                   className="bg-green-600 hover:bg-green-700"
                 >

@@ -66,20 +66,24 @@ export default function EditContract() {
         if (contractData.data_fim_efetividade) contractData.data_fim_efetividade = contractData.data_fim_efetividade.split('T')[0];
         if (contractData.data_limite_andamento) contractData.data_limite_andamento = contractData.data_limite_andamento.split('T')[0];
 
-        // Calculate executed value from TCs
+        // Calculate executed value from TCs for reference or default
         const contractTCs = allTCs.filter(tc =>
           String(tc.contrato_associado_pd).trim() === String(contractData.contrato).trim()
         );
         const totalTCsValue = contractTCs.reduce((sum, tc) => sum + (tc.valor_total || 0), 0);
 
-        // Use calculated value if > 0, otherwise keep existing value if present
-        // This prevents zeroing out the value if TCs are missing but value was manually set or imported
-        const finalExecutedValue = totalTCsValue > 0 ? totalTCsValue : (contractData.valor_faturado || 0);
+        // Prioritize the value stored in the database if it exists (allows manual overrides)
+        // Only use the calculated totalTCsValue if the DB value is 0 or null
+        const finalExecutedValue = (contractData.valor_faturado && contractData.valor_faturado > 0)
+          ? contractData.valor_faturado
+          : totalTCsValue;
 
         setExecutedValue(finalExecutedValue);
 
-        // Update contract data with calculated values
+        // Ensure contract data reflects the value we decided to use
         contractData.valor_faturado = finalExecutedValue;
+
+        // Recalculate 'valor_a_faturar' based on the decided 'valor_faturado'
         contractData.valor_a_faturar = (contractData.valor_contrato || 0) - finalExecutedValue;
 
         setContract(contractData);

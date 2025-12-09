@@ -127,7 +127,7 @@ export default function ViewTC() {
                     <h1 className="text-3xl font-bold text-gray-900">TC: {tc.numero_tc}</h1>
                     <p className="text-gray-600 mt-1">Detalhes do Termo de Confirmação</p>
                 </div>
-                <Link to={createPageUrl(`EditTC?id=${tc.id}`)}>
+                <Link to={`${createPageUrl("EditTC")}?id=${tc.id}`}>
                     <Button className="bg-blue-600 hover:bg-blue-700">
                         <Edit className="w-4 h-4 mr-2" />
                         Editar
@@ -212,7 +212,7 @@ export default function ViewTC() {
                         {associatedContract && (
                             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                                 <Link
-                                    to={createPageUrl(`ViewContract?id=${associatedContract.id}`)}
+                                    to={`${createPageUrl("ViewContract")}?id=${associatedContract.id}`}
                                     className="text-blue-600 hover:text-blue-800 font-medium hover:underline"
                                 >
                                     Ver detalhes do contrato →

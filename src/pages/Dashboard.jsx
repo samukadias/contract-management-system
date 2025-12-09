@@ -20,29 +20,53 @@ import RecentContracts from "../components/dashboard/RecentContracts";
 import FinancialOverview from "../components/dashboard/FinancialOverview";
 import DexAlert from "../components/dashboard/DexAlert";
 
+import { useAuth } from "@/context/AuthContext";
+
 export default function Dashboard() {
   const [contracts, setContracts] = useState([]);
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadUserAndContracts();
-  }, []);
+    loadContracts();
+  }, [user]);
 
-  const loadUserAndContracts = async () => {
+  const loadContracts = async () => {
     setIsLoading(true);
     try {
-      const currentUser = await User.me();
-      setUser(currentUser);
+      let currentUser = user;
+
+      // Fallback: If no user in context, try to get default/dev user
+      if (!currentUser) {
+        try {
+          currentUser = await User.me();
+          if (currentUser) {
+            // If we found a fallback user, set strictly for this component's logic
+            setUser(currentUser);
+          }
+        } catch (e) {
+          console.warn("No fallback user found");
+        }
+      }
+
+      if (!currentUser) {
+        setIsLoading(false);
+        return;
+      }
 
       let contractData = await Contract.list("-created_date");
 
       // Filtrar contratos baseado no perfil do usuário
       if (currentUser.perfil === "ANALISTA") {
-        contractData = contractData.filter(contract =>
-          contract.analista_responsavel === currentUser.full_name ||
-          contract.created_by === currentUser.email
-        );
+        const normalizedUserName = (currentUser.full_name || "").trim().toLowerCase();
+        const normalizedUserEmail = (currentUser.email || "").trim().toLowerCase();
+
+        contractData = contractData.filter(contract => {
+          const contractAnalyst = (contract.analista_responsavel || "").trim().toLowerCase();
+          const contractCreator = (contract.created_by || "").trim().toLowerCase();
+
+          return contractAnalyst === normalizedUserName || contractCreator === normalizedUserEmail;
+        });
       }
 
       setContracts(contractData);
@@ -143,12 +167,12 @@ export default function Dashboard() {
         />
         <StatsCard
           title="Valor Total dos Contratos"
-          value={`R$ ${stats.totalValue.toLocaleString('pt-BR')}`}
+          value={`R$ ${stats.totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon={DollarSign}
           color="purple"
           isLoading={isLoading}
           progress={billingProgress}
-          progressLabel={`R$ ${stats.totalBilled.toLocaleString('pt-BR')} faturado`}
+          progressLabel={`R$ ${stats.totalBilled.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} faturado`}
         />
       </div>
 

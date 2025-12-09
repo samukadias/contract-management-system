@@ -5,11 +5,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function FinancialOverview({ contracts, isLoading }) {
   const getFinancialData = () => {
-    const activeContracts = contracts.filter(c => c.status === "Ativo");
+    // Robust status check
+    const activeContracts = contracts.filter(c => c.status && c.status.trim().toLowerCase() === "ativo");
 
     const totalContractValue = activeContracts.reduce((sum, c) => sum + (c.valor_contrato || 0), 0);
     const totalBilled = activeContracts.reduce((sum, c) => sum + (c.valor_faturado || 0), 0);
-    const totalToBill = activeContracts.reduce((sum, c) => sum + (c.valor_a_faturar || 0), 0);
+    const totalToBill = activeContracts.reduce((sum, c) => {
+      // Prefer stored value if > 0
+      if (c.valor_a_faturar && c.valor_a_faturar > 0) {
+        return sum + c.valor_a_faturar;
+      }
+
+      // Fallback: Calculate dynamically (Contract - Billed - Canceled)
+      const calculated = (c.valor_contrato || 0) - (c.valor_faturado || 0) - (c.valor_cancelado || 0);
+      return sum + Math.max(0, calculated);
+    }, 0);
     const totalCanceled = activeContracts.reduce((sum, c) => sum + (c.valor_cancelado || 0), 0);
 
     const billingPercentage = totalContractValue > 0 ? (totalBilled / totalContractValue) * 100 : 0;
@@ -58,7 +68,7 @@ export default function FinancialOverview({ contracts, isLoading }) {
         <div>
           <p className="text-sm text-gray-600 mb-1">Valor Total dos Contratos</p>
           <p className="text-2xl font-bold text-gray-900">
-            R$ {financialData.totalContractValue.toLocaleString('pt-BR')}
+            R$ {financialData.totalContractValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
 
@@ -69,7 +79,7 @@ export default function FinancialOverview({ contracts, isLoading }) {
               <p className="text-xs text-green-600 font-medium">Faturado</p>
             </div>
             <p className="font-semibold text-green-700">
-              R$ {financialData.totalBilled.toLocaleString('pt-BR')}
+              R$ {financialData.totalBilled.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
 
@@ -79,7 +89,7 @@ export default function FinancialOverview({ contracts, isLoading }) {
               <p className="text-xs text-blue-600 font-medium">A Faturar</p>
             </div>
             <p className="font-semibold text-blue-700">
-              R$ {financialData.totalToBill.toLocaleString('pt-BR')}
+              R$ {financialData.totalToBill.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
         </div>
@@ -91,7 +101,7 @@ export default function FinancialOverview({ contracts, isLoading }) {
               <p className="text-xs text-red-600 font-medium">Cancelado</p>
             </div>
             <p className="font-semibold text-red-700">
-              R$ {financialData.totalCanceled.toLocaleString('pt-BR')}
+              R$ {financialData.totalCanceled.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
         )}

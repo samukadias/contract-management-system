@@ -96,14 +96,33 @@ export class Contract {
             properties: {
                 analista_responsavel: { type: "string" },
                 cliente: { type: "string" },
+                grupo_cliente: { type: "string" },
                 contrato: { type: "string" },
+                termo: { type: "string" },
                 status: { type: "string" },
                 status_vencimento: { type: "string" },
+                data_inicio_efetividade: { type: "string" },
                 data_fim_efetividade: { type: "string" },
+                data_limite_andamento: { type: "string" },
                 valor_contrato: { type: "number" },
-                objeto: { type: "string" },
+                valor_faturado: { type: "number" },
+                valor_cancelado: { type: "number" },
+                valor_a_faturar: { type: "number" },
+                valor_novo_contrato: { type: "number" },
+                objeto_contrato: { type: "string" },
                 tipo_tratativa: { type: "string" },
-                secao_responsavel: { type: "string" },
+                tipo_aditamento: { type: "string" },
+                etapa: { type: "string" },
+                esp: { type: "string" },
+                observacao: { type: "string" },
+                numero_processo_sei_nosso: { type: "string" },
+                numero_processo_sei_cliente: { type: "string" },
+                contrato_cliente: { type: "string" },
+                contrato_anterior: { type: "string" },
+                numero_pnpp_crm: { type: "string" },
+                sei: { type: "string" },
+                contrato_novo: { type: "string" },
+                termo_novo: { type: "string" },
                 created_by: { type: "string" },
             },
             required: ["analista_responsavel", "cliente", "contrato"]
@@ -131,14 +150,36 @@ export class Contract {
 
     static async list() {
         try {
-            const { data, error } = await supabase
-                .from('contracts')
-                .select('*')
-                .order('created_at', { ascending: false });
+            let allContracts = [];
+            let from = 0;
+            let to = 999;
+            let batchSize = 1000;
+            let more = true;
 
-            if (error) throw error;
+            while (more) {
+                const { data, error } = await supabase
+                    .from('contracts')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .range(from, to);
 
-            return (data || []).map(this.mapFromDB);
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    allContracts = allContracts.concat(data);
+
+                    if (data.length < batchSize) {
+                        more = false;
+                    } else {
+                        from += batchSize;
+                        to += batchSize;
+                    }
+                } else {
+                    more = false;
+                }
+            }
+
+            return allContracts.map(this.mapFromDB);
         } catch (error) {
             // console.error('Erro ao listar contratos:', error);
             throw error;
