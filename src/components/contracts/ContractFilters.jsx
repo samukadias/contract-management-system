@@ -25,6 +25,8 @@ export default function ContractFilters({ filters, onFiltersChange }) {
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="Ativo">Ativo</SelectItem>
+                <SelectItem value="Renovado">Renovado</SelectItem>
+                <SelectItem value="Encerrado">Encerrado</SelectItem>
                 <SelectItem value="Expirado">Expirado</SelectItem>
               </SelectContent>
             </Select>

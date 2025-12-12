@@ -12,6 +12,8 @@ import { createPageUrl } from "@/utils";
 
 const statusColors = {
   "Ativo": "bg-green-100 text-green-800",
+  "Renovado": "bg-blue-100 text-blue-800",
+  "Encerrado": "bg-slate-100 text-slate-800",
   "Expirado": "bg-red-100 text-red-800"
 };
 

@@ -253,6 +253,8 @@ export default function ContractForm({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Ativo">Ativo</SelectItem>
+                    <SelectItem value="Renovado">Renovado</SelectItem>
+                    <SelectItem value="Encerrado">Encerrado</SelectItem>
                     <SelectItem value="Expirado">Expirado</SelectItem>
                   </SelectContent>
                 </Select>

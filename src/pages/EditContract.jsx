@@ -5,10 +5,12 @@ import { User } from "@/entities/User";
 import { TermoConfirmacao } from "@/entities/TermoConfirmacao";
 import { useNavigate, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { ArrowLeft, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Trash2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +22,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import ContractForm from "../components/contracts/ContractForm";
 
@@ -34,6 +44,11 @@ export default function EditContract() {
   const [users, setUsers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [executedValue, setExecutedValue] = useState(0);
+
+  // Renewal State
+  const [isRenewDialogOpen, setIsRenewDialogOpen] = useState(false);
+  const [newContractNumber, setNewContractNumber] = useState("");
+  const [isRenewing, setIsRenewing] = useState(false);
 
   useEffect(() => {
     const fetchContractAndUsers = async () => {
@@ -131,6 +146,62 @@ export default function EditContract() {
     }
   };
 
+  const handleRenewContract = async () => {
+    if (!newContractNumber.trim()) {
+      toast.error("Informe o número do novo contrato.");
+      return;
+    }
+
+    setIsRenewing(true);
+    try {
+      // 1. Prepare data for NEW contract (Clone existing but reset financials/status)
+      const newContractData = {
+        ...contract, // Copy all fields
+        id: undefined, // Let DB generate new ID
+        created_at: undefined,
+        updated_at: undefined,
+
+        contrato: newContractNumber.toUpperCase(), // The new number
+        contrato_anterior: contract.contrato, // Link to old
+        contrato_novo: null, // New one has no successor yet
+
+        status: "Ativo", // Start fresh
+        status_vencimento: "Em dia",
+
+        // Reset financials
+        valor_faturado: 0,
+        valor_cancelado: 0,
+        valor_a_faturar: contract.valor_contrato, // Starts full? Or maybe 0? Usually renewed contracts maintain value logic, let's assume full value for now or user adjusts. 
+        // Actually, if it's a renewal, the value might change. For safety, we keep the old value as default but reset execution.
+
+        // Dates usually change, but we'll keep them for the user to edit as they are likely different.
+      };
+
+      // 2. Create the NEW contract
+      const createdContract = await Contract.create(newContractData);
+
+      // 3. Update the OLD contract
+      await Contract.update(contract.id, {
+        status: "Renovado",
+        contrato_novo: newContractNumber.toUpperCase()
+      });
+
+      toast.success("Contrato renovado com sucesso!");
+      setIsRenewDialogOpen(false);
+
+      // 4. Redirect to the NEW contract's edit page
+      // We need to wait a moment or just navigate
+      navigate(`${createPageUrl("EditContract")}?id=${createdContract.id}`);
+
+    } catch (error) {
+      console.error("Erro ao renovar contrato:", error);
+      toast.error("Erro ao renovar contrato.");
+    } finally {
+      setIsRenewing(false);
+    }
+  };
+
+
   if (isLoading) {
     return (
       <div className="p-6 max-w-4xl mx-auto">
@@ -214,6 +285,17 @@ export default function EditContract() {
           <p className="text-gray-600 mt-1">Atualize os dados do contrato selecionado</p>
         </div>
 
+        {/* Botão Renovar para Analistas/Gestores e contratos ativos */}
+        {["ANALISTA", "GESTOR"].includes(currentUser?.perfil) && contract.status === "Ativo" && (
+          <Button
+            className="bg-green-600 hover:bg-green-700 text-white"
+            onClick={() => setIsRenewDialogOpen(true)}
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Renovar Contrato
+          </Button>
+        )}
+
         {/* Botão Excluir apenas para Gestores */}
         {currentUser?.perfil === "GESTOR" && contract && (
           <AlertDialog>
@@ -262,6 +344,38 @@ export default function EditContract() {
           />
         </CardContent>
       </Card>
+
+      {/* Dialogo de Renovação */}
+      <Dialog open={isRenewDialogOpen} onOpenChange={setIsRenewDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Renovar Contrato</DialogTitle>
+            <DialogDescription>
+              Isso irá encerrar o contrato atual ({contract.contrato}) como "Renovado" e criar um novo contrato vinculado a ele.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Número do Novo Contrato/PD</Label>
+              <Input
+                placeholder="Ex: PD-2025/001"
+                value={newContractNumber}
+                onChange={(e) => setNewContractNumber(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRenewDialogOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={handleRenewContract}
+              className="bg-green-600 hover:bg-green-700"
+              disabled={isRenewing}
+            >
+              {isRenewing ? "Processando..." : "Confirmar Renovação"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
