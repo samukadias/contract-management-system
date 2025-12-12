@@ -1,7 +1,6 @@
 import { supabase } from '@/lib/supabase';
 
 export class Contract {
-    static STORAGE_KEY = "contracts_v4";
 
     // Mapear campos do banco para o formato da aplicação
     static mapFromDB(dbContract) {
@@ -148,7 +147,7 @@ export class Contract {
         }
     }
 
-    static async list() {
+    static async list(filters = {}) {
         try {
             let allContracts = [];
             let from = 0;
@@ -156,12 +155,29 @@ export class Contract {
             let batchSize = 1000;
             let more = true;
 
+            // Se tiver filtro de analista, podemos otimizar (mas range ainda é necessário se for muitos)
+            // Para simplificar a paginação com filtro, vamos assumir que o filtro reduz o set o suficiente
+            // ou manter a lógica de paginação.
+
+            let query = supabase
+                .from('contracts')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (filters.analista) {
+                // Filtro insensível a caixa ou exato, dependendo da necessidade.
+                // O banco geralmente salva o nome completo.
+                query = query.eq('analista_responsavel', filters.analista);
+            }
+
+            // TODO: Se precisarmos de paginação real no futuro, ajustar aqui.
+            // Por enquanto, mantemos o loop para garantir que pegamos tudo que corresponde ao filtro (ou tudo se sem filtro)
+
             while (more) {
-                const { data, error } = await supabase
-                    .from('contracts')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .range(from, to);
+                // Precisamos refazer a query base pq o .range() modifica o objeto (ou clone)
+                // Melhor abordagem simples: usar a query construída acima e adicionar range
+
+                const { data, error } = await query.range(from, to);
 
                 if (error) throw error;
 
@@ -256,59 +272,6 @@ export class Contract {
         } catch (error) {
             // console.error('Erro ao deletar contrato:', error);
             throw error;
-        }
-    }
-
-    // Métodos de compatibilidade com localStorage (para migração)
-    static async clear() {
-        try {
-            const { error } = await supabase
-                .from('contracts')
-                .delete()
-                .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
-
-            if (error) throw error;
-            return true;
-        } catch (error) {
-            // console.error('Erro ao limpar contratos:', error);
-            throw error;
-        }
-    }
-
-    static async reset() {
-        await this.clear();
-    }
-
-    // Método para importar dados do localStorage para Supabase
-    static async migrateFromLocalStorage() {
-        try {
-            const localData = localStorage.getItem(this.STORAGE_KEY);
-            if (!localData) {
-                // console.log('Nenhum dado no localStorage para migrar.');
-                return { success: true, count: 0 };
-            }
-
-            const contracts = JSON.parse(localData);
-            if (!Array.isArray(contracts) || contracts.length === 0) {
-                // console.log('Nenhum contrato válido para migrar.');
-                return { success: true, count: 0 };
-            }
-
-            // Inserir em lote
-            const dbContracts = contracts.map(c => this.mapToDB(c));
-
-            const { data, error } = await supabase
-                .from('contracts')
-                .insert(dbContracts)
-                .select();
-
-            if (error) throw error;
-
-            // console.log(`${data.length} contratos migrados com sucesso!`);
-            return { success: true, count: data.length };
-        } catch (error) {
-            // console.error('Erro ao migrar contratos:', error);
-            return { success: false, error: error.message };
         }
     }
 }

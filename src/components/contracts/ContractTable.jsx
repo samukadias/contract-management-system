@@ -108,7 +108,7 @@ export default function ContractTable({ contracts, isLoading, onContractUpdate }
                 <TableHead>Status</TableHead>
                 <TableHead>Vencimento</TableHead>
                 <TableHead>Data Fim</TableHead>
-                <TableHead>Valor</TableHead>
+                <TableHead className="text-right">Valor</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -161,9 +161,9 @@ export default function ContractTable({ contracts, isLoading, onContractUpdate }
                       return isNaN(date.getTime()) ? "Data Inválida" : format(date, "dd/MM/yyyy");
                     })()}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-right">
                     {contract.valor_contrato ?
-                      `R$ ${contract.valor_contrato.toLocaleString('pt-BR')}` :
+                      contract.valor_contrato.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 }) :
                       "-"
                     }
                   </TableCell>

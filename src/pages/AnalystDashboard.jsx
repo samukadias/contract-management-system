@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, AlertTriangle, CheckCircle, Plus, DollarSign, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
-import { createPageUrl } from "@/utils";
+import { createPageUrl, formatCurrency } from "@/utils";
 import { format, addMonths, isBefore } from "date-fns";
 
 export default function AnalystDashboard() {
@@ -21,12 +21,8 @@ export default function AnalystDashboard() {
     const loadData = async () => {
         setIsLoading(true);
         try {
-            const allContracts = await Contract.list();
-
-            // Filtrar contratos do analista
-            const myContracts = allContracts.filter(c =>
-                c.analista_responsavel?.toLowerCase() === user.full_name?.toLowerCase()
-            );
+            // Otimização: Filtrar direto no banco
+            const myContracts = await Contract.list({ analista: user.full_name });
 
             setContracts(myContracts);
         } catch (error) {
@@ -121,10 +117,10 @@ export default function AnalystDashboard() {
                             <div>
                                 <p className="text-sm font-medium text-gray-500">Valor Total (Carteira)</p>
                                 <h3 className="text-2xl font-bold text-gray-900 mt-2">
-                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: "compact" }).format(totalValue)}
+                                    {formatCurrency(totalValue)}
                                 </h3>
                                 <p className="text-xs text-gray-500 mt-1">
-                                    Faturado: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: "compact" }).format(totalInvoiced)}
+                                    Faturado: {formatCurrency(totalInvoiced)}
                                 </p>
                             </div>
                             <div className="p-2 bg-purple-50 rounded-lg">
@@ -184,7 +180,7 @@ export default function AnalystDashboard() {
                             <div className="space-y-2">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-600">Valor Total Contratado</span>
-                                    <span className="font-medium">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue)}</span>
+                                    <span className="font-medium">{formatCurrency(totalValue)}</span>
                                 </div>
                                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                                     <div className="h-full bg-blue-500 rounded-full" style={{ width: '100%' }}></div>
@@ -194,7 +190,7 @@ export default function AnalystDashboard() {
                             <div className="space-y-2">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-600">Valor Faturado</span>
-                                    <span className="font-medium text-green-600">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalInvoiced)}</span>
+                                    <span className="font-medium text-green-600">{formatCurrency(totalInvoiced)}</span>
                                 </div>
                                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                                     <div
@@ -207,7 +203,7 @@ export default function AnalystDashboard() {
                             <div className="space-y-2">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-600">Valor a Faturar</span>
-                                    <span className="font-medium text-orange-600">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalToInvoice)}</span>
+                                    <span className="font-medium text-orange-600">{formatCurrency(totalToInvoice)}</span>
                                 </div>
                                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                                     <div
