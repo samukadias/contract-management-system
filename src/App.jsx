@@ -18,7 +18,6 @@ import NewTC from './pages/NewTC';
 import ViewTC from './pages/ViewTC';
 import EditTC from './pages/EditTC';
 import Users from './pages/Users';
-import Debug from './pages/Debug';
 import ClientDashboard from './pages/ClientDashboard';
 
 // Components
@@ -151,7 +150,6 @@ function AppRoutes() {
                 <Route path="/confirmation/edit" element={<PrivateRoute><EditTC /></PrivateRoute>} />
 
                 <Route path="/users" element={<PrivateRoute allowedRoles={['GESTOR']}><Users /></PrivateRoute>} />
-                <Route path="/debug" element={<PrivateRoute allowedRoles={['GESTOR']}><Debug /></PrivateRoute>} />
             </Routes>
             <Toaster />
         </LayoutWrapper>

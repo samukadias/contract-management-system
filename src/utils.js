@@ -24,8 +24,6 @@ export const createPageUrl = (page) => {
         "EditTC": "/confirmation/edit",
         "Users": "/users",
         "UserManagement": "/users", // Alias
-        "Debug": "/debug",
-        "DebugInfo": "/debug", // Alias
         "ClientDashboard": "/client-dashboard"
     };
     return routes[page] || "/";

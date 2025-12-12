@@ -11,7 +11,6 @@ import {
     ListTodo,
     Users,
     Database,
-    Bug,
     Building2,
     LogOut
 } from 'lucide-react';
@@ -33,7 +32,6 @@ const menuItems = [
     { icon: ListTodo, label: 'Controle Etapas', path: '/stage-control', description: 'Gantt das etapas', roles: ['GESTOR'] },
     { icon: Users, label: 'Gerenciar Usuários', path: '/users', description: 'Usuários do sistema', roles: ['GESTOR'] },
     { icon: Database, label: 'Gerenciar Dados', path: '/data-management', description: 'Limpar dados', roles: ['GESTOR'] },
-    { icon: Bug, label: 'Debug Info', path: '/debug', description: 'Informações de debug', roles: ['GESTOR'] },
 ];
 
 import { X } from 'lucide-react';
