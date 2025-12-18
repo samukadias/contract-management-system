@@ -2,6 +2,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, TrendingUp, TrendingDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency, formatCompactCurrency } from "@/utils";
 
 export default function FinancialOverview({ contracts, isLoading }) {
   const getFinancialData = () => {
@@ -67,41 +68,41 @@ export default function FinancialOverview({ contracts, isLoading }) {
       <CardContent className="space-y-4">
         <div>
           <p className="text-sm text-gray-600 mb-1">Valor Total dos Contratos</p>
-          <p className="text-2xl font-bold text-gray-900">
-            R$ {financialData.totalContractValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <p className="text-2xl font-bold text-gray-900 truncate" title={formatCurrency(financialData.totalContractValue)}>
+            {formatCompactCurrency(financialData.totalContractValue)}
           </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="p-3 bg-green-50 rounded-lg">
+          <div className="p-3 bg-green-50 rounded-lg overflow-hidden">
             <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="w-4 h-4 text-green-600" />
-              <p className="text-xs text-green-600 font-medium">Faturado</p>
+              <TrendingUp className="w-4 h-4 text-green-600 shrink-0" />
+              <p className="text-xs text-green-600 font-medium truncate">Faturado</p>
             </div>
-            <p className="font-semibold text-green-700">
-              R$ {financialData.totalBilled.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <p className="font-semibold text-green-700 truncate" title={formatCurrency(financialData.totalBilled)}>
+              {formatCompactCurrency(financialData.totalBilled)}
             </p>
           </div>
 
-          <div className="p-3 bg-blue-50 rounded-lg">
+          <div className="p-3 bg-blue-50 rounded-lg overflow-hidden">
             <div className="flex items-center gap-2 mb-1">
-              <DollarSign className="w-4 h-4 text-blue-600" />
-              <p className="text-xs text-blue-600 font-medium">A Faturar</p>
+              <DollarSign className="w-4 h-4 text-blue-600 shrink-0" />
+              <p className="text-xs text-blue-600 font-medium truncate">A Faturar</p>
             </div>
-            <p className="font-semibold text-blue-700">
-              R$ {financialData.totalToBill.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <p className="font-semibold text-blue-700 truncate" title={formatCurrency(financialData.totalToBill)}>
+              {formatCompactCurrency(financialData.totalToBill)}
             </p>
           </div>
         </div>
 
         {financialData.totalCanceled > 0 && (
-          <div className="p-3 bg-red-50 rounded-lg">
+          <div className="p-3 bg-red-50 rounded-lg overflow-hidden">
             <div className="flex items-center gap-2 mb-1">
-              <TrendingDown className="w-4 h-4 text-red-600" />
-              <p className="text-xs text-red-600 font-medium">Cancelado</p>
+              <TrendingDown className="w-4 h-4 text-red-600 shrink-0" />
+              <p className="text-xs text-red-600 font-medium truncate">Cancelado</p>
             </div>
-            <p className="font-semibold text-red-700">
-              R$ {financialData.totalCanceled.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <p className="font-semibold text-red-700 truncate" title={formatCurrency(financialData.totalCanceled)}>
+              {formatCompactCurrency(financialData.totalCanceled)}
             </p>
           </div>
         )}

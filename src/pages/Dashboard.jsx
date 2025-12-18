@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Contract } from "@/entities/Contract";
 import { User } from "@/entities/User";
 import { Link } from "react-router-dom";
-import { createPageUrl } from "@/utils";
+import { createPageUrl, formatCurrency, formatCompactCurrency } from "@/utils";
 import {
   FileText,
   AlertTriangle,
@@ -167,12 +167,13 @@ export default function Dashboard() {
         />
         <StatsCard
           title="Valor Total dos Contratos"
-          value={`R$ ${stats.totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={formatCompactCurrency(stats.totalValue)}
+          fullValue={formatCurrency(stats.totalValue)}
           icon={DollarSign}
           color="purple"
           isLoading={isLoading}
           progress={billingProgress}
-          progressLabel={`R$ ${stats.totalBilled.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} faturado`}
+          progressLabel={`${formatCompactCurrency(stats.totalBilled)} faturado`}
         />
       </div>
 

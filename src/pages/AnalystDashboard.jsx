@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, AlertTriangle, CheckCircle, Plus, DollarSign, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
-import { createPageUrl, formatCurrency } from "@/utils";
+import { createPageUrl, formatCurrency, formatCompactCurrency } from "@/utils";
 import { format, addMonths, isBefore } from "date-fns";
 
 export default function AnalystDashboard() {
@@ -33,7 +33,8 @@ export default function AnalystDashboard() {
 
     // Métricas
     const totalContracts = contracts.length;
-    const activeContracts = contracts.filter(c => c.status === "Ativo").length;
+    const activeContractsList = contracts.filter(c => c.status === "Ativo");
+    const activeContractsCount = activeContractsList.length;
 
     const twoMonthsFromNow = addMonths(new Date(), 2);
     const expiringContracts = contracts.filter(c => {
@@ -42,10 +43,10 @@ export default function AnalystDashboard() {
         return isBefore(endDate, twoMonthsFromNow) && endDate >= new Date();
     });
 
-    // Cálculos Financeiros (Soma dos campos dos contratos)
-    const totalValue = contracts.reduce((acc, curr) => acc + (curr.valor_contrato || 0), 0);
-    const totalInvoiced = contracts.reduce((acc, curr) => acc + (curr.valor_faturado || 0), 0);
-    const totalToInvoice = contracts.reduce((acc, curr) => acc + (curr.valor_a_faturar || 0), 0);
+    // Cálculos Financeiros (Considerando apenas contratos ATIVOS)
+    const totalValue = activeContractsList.reduce((acc, curr) => acc + (curr.valor_contrato || 0), 0);
+    const totalInvoiced = activeContractsList.reduce((acc, curr) => acc + (curr.valor_faturado || 0), 0);
+    const totalToInvoice = activeContractsList.reduce((acc, curr) => acc + (curr.valor_a_faturar || 0), 0);
 
     if (isLoading) {
         return <div className="p-6">Carregando dashboard...</div>;
@@ -71,11 +72,13 @@ export default function AnalystDashboard() {
                 <Card className="bg-white border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
                         <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-sm font-medium text-gray-500">Total de Contratos</p>
-                                <h3 className="text-3xl font-bold text-gray-900 mt-2">{totalContracts}</h3>
+                            <div className="overflow-hidden">
+                                <p className="text-sm font-medium text-gray-500 truncate">Total de Contratos</p>
+                                <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 mt-2 truncate" title={totalContracts}>
+                                    {totalContracts}
+                                </h3>
                             </div>
-                            <div className="p-2 bg-blue-50 rounded-lg">
+                            <div className="p-2 bg-blue-50 rounded-lg shrink-0">
                                 <FileText className="w-6 h-6 text-blue-600" />
                             </div>
                         </div>
@@ -85,11 +88,13 @@ export default function AnalystDashboard() {
                 <Card className="bg-white border-l-4 border-l-green-500 shadow-sm hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
                         <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-sm font-medium text-gray-500">Contratos Ativos</p>
-                                <h3 className="text-3xl font-bold text-gray-900 mt-2">{activeContracts}</h3>
+                            <div className="overflow-hidden">
+                                <p className="text-sm font-medium text-gray-500 truncate">Contratos Ativos</p>
+                                <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 mt-2 truncate" title={activeContractsCount}>
+                                    {activeContractsCount}
+                                </h3>
                             </div>
-                            <div className="p-2 bg-green-50 rounded-lg">
+                            <div className="p-2 bg-green-50 rounded-lg shrink-0">
                                 <CheckCircle className="w-6 h-6 text-green-600" />
                             </div>
                         </div>
@@ -99,12 +104,14 @@ export default function AnalystDashboard() {
                 <Card className="bg-white border-l-4 border-l-orange-500 shadow-sm hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
                         <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-sm font-medium text-gray-500">Vencendo em Breve</p>
-                                <p className="text-xs text-orange-600 font-medium mb-1">(Próximos 2 meses)</p>
-                                <h3 className="text-3xl font-bold text-gray-900">{expiringContracts.length}</h3>
+                            <div className="overflow-hidden">
+                                <p className="text-sm font-medium text-gray-500 truncate">Vencendo em Breve</p>
+                                <p className="text-xs text-orange-600 font-medium mb-1 truncate">(Próximos 2 meses)</p>
+                                <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 truncate" title={expiringContracts.length}>
+                                    {expiringContracts.length}
+                                </h3>
                             </div>
-                            <div className="p-2 bg-orange-50 rounded-lg">
+                            <div className="p-2 bg-orange-50 rounded-lg shrink-0">
                                 <AlertTriangle className="w-6 h-6 text-orange-600" />
                             </div>
                         </div>
@@ -114,16 +121,16 @@ export default function AnalystDashboard() {
                 <Card className="bg-white border-l-4 border-l-purple-500 shadow-sm hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
                         <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-sm font-medium text-gray-500">Valor Total (Carteira)</p>
-                                <h3 className="text-2xl font-bold text-gray-900 mt-2">
-                                    {formatCurrency(totalValue)}
+                            <div className="overflow-hidden min-w-0">
+                                <p className="text-sm font-medium text-gray-500 truncate">Valor Total (Carteira)</p>
+                                <h3 className="text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900 mt-2 truncate" title={formatCurrency(totalValue)}>
+                                    {formatCompactCurrency(totalValue)}
                                 </h3>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Faturado: {formatCurrency(totalInvoiced)}
+                                <p className="text-xs text-gray-500 mt-1 truncate" title={`Faturado: ${formatCurrency(totalInvoiced)}`}>
+                                    Faturado: {formatCompactCurrency(totalInvoiced)}
                                 </p>
                             </div>
-                            <div className="p-2 bg-purple-50 rounded-lg">
+                            <div className="p-2 bg-purple-50 rounded-lg shrink-0">
                                 <DollarSign className="w-6 h-6 text-purple-600" />
                             </div>
                         </div>
@@ -178,9 +185,9 @@ export default function AnalystDashboard() {
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-600">Valor Total Contratado</span>
-                                    <span className="font-medium">{formatCurrency(totalValue)}</span>
+                                <div className="flex justify-between text-sm items-center gap-2">
+                                    <span className="text-gray-600 whitespace-nowrap">Valor Total Contratado</span>
+                                    <span className="font-medium truncate" title={formatCurrency(totalValue)}>{formatCurrency(totalValue)}</span>
                                 </div>
                                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                                     <div className="h-full bg-blue-500 rounded-full" style={{ width: '100%' }}></div>
@@ -188,9 +195,9 @@ export default function AnalystDashboard() {
                             </div>
 
                             <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-600">Valor Faturado</span>
-                                    <span className="font-medium text-green-600">{formatCurrency(totalInvoiced)}</span>
+                                <div className="flex justify-between text-sm items-center gap-2">
+                                    <span className="text-gray-600 whitespace-nowrap">Valor Faturado</span>
+                                    <span className="font-medium text-green-600 truncate" title={formatCurrency(totalInvoiced)}>{formatCurrency(totalInvoiced)}</span>
                                 </div>
                                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                                     <div
@@ -201,9 +208,9 @@ export default function AnalystDashboard() {
                             </div>
 
                             <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-600">Valor a Faturar</span>
-                                    <span className="font-medium text-orange-600">{formatCurrency(totalToInvoice)}</span>
+                                <div className="flex justify-between text-sm items-center gap-2">
+                                    <span className="text-gray-600 whitespace-nowrap">Valor a Faturar</span>
+                                    <span className="font-medium text-orange-600 truncate" title={formatCurrency(totalToInvoice)}>{formatCurrency(totalToInvoice)}</span>
                                 </div>
                                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                                     <div

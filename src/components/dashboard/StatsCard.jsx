@@ -25,7 +25,7 @@ const colorMap = {
   }
 };
 
-export default function StatsCard({ title, value, icon: Icon, color, isLoading, progress, progressLabel }) {
+export default function StatsCard({ title, value, fullValue, icon: Icon, color, isLoading, progress, progressLabel }) {
   const colors = colorMap[color];
 
   if (isLoading) {
@@ -49,8 +49,8 @@ export default function StatsCard({ title, value, icon: Icon, color, isLoading, 
       <CardContent className="p-6 flex-grow">
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-600 mb-2">{title}</p>
-            <p className="text-2xl lg:text-3xl font-bold text-gray-900 break-words">{value}</p>
+            <p className="text-sm font-medium text-gray-600 mb-2 truncate" title={title}>{title}</p>
+            <p className="text-2xl lg:text-3xl font-bold text-gray-900 truncate" title={fullValue || value}>{value}</p>
           </div>
           <div className={`p-3 rounded-xl ${colors.bgLight} flex-shrink-0 ml-3`}>
             <Icon className={`w-6 h-6 ${colors.text}`} />
@@ -70,7 +70,7 @@ export default function StatsCard({ title, value, icon: Icon, color, isLoading, 
             />
           </div>
           {progressLabel && (
-            <p className="text-xs text-gray-500 mt-2 text-right break-words">{progressLabel}</p>
+            <p className="text-xs text-gray-500 mt-2 text-right truncate" title={progressLabel}>{progressLabel}</p>
           )}
         </div>
       )}

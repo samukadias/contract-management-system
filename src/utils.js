@@ -37,3 +37,12 @@ export const formatCurrency = (value) => {
         maximumFractionDigits: 2
     }).format(value || 0);
 };
+
+export const formatCompactCurrency = (value) => {
+    return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+        notation: "compact",
+        maximumFractionDigits: 2
+    }).format(value || 0);
+};
