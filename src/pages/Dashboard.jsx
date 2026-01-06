@@ -18,6 +18,7 @@ import StatsCard from "../components/dashboard/StatsCard";
 import ContractAlerts from "../components/dashboard/ContractAlerts";
 import RecentContracts from "../components/dashboard/RecentContracts";
 import FinancialOverview from "../components/dashboard/FinancialOverview";
+import ContractsExpiringChart from "../components/dashboard/ContractsExpiringChart";
 import DexAlert from "../components/dashboard/DexAlert";
 
 import { useAuth } from "@/context/AuthContext";
@@ -175,6 +176,11 @@ export default function Dashboard() {
           progress={billingProgress}
           progressLabel={`${formatCompactCurrency(stats.totalBilled)} faturado`}
         />
+      </div>
+
+      {/* Gráfico de Vencimentos */}
+      <div className="grid grid-cols-1">
+        <ContractsExpiringChart contracts={contracts} isLoading={isLoading} />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">

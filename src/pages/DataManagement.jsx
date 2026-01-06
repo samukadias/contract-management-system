@@ -41,6 +41,12 @@ export default function DataManagement() {
   const [targetAnalyst, setTargetAnalyst] = useState("");
   const [isTransferring, setIsTransferring] = useState(false);
 
+  // Transfer Client States
+  const [clients, setClients] = useState([]);
+  const [sourceClient, setSourceClient] = useState("");
+  const [targetAnalystForClient, setTargetAnalystForClient] = useState("");
+  const [isTransferringClient, setIsTransferringClient] = useState(false);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -56,6 +62,10 @@ export default function DataManagement() {
       // Extract unique analysts
       const uniqueAnalysts = [...new Set(contractsData.map(c => c.analista_responsavel).filter(Boolean))].sort();
       setAnalysts(uniqueAnalysts);
+
+      // Extract unique clients
+      const uniqueClients = [...new Set(contractsData.map(c => c.nome_cliente).filter(Boolean))].sort();
+      setClients(uniqueClients);
 
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -145,6 +155,47 @@ export default function DataManagement() {
       toast.error("Erro ao transferir carteira.");
     } finally {
       setIsTransferring(false);
+    }
+  };
+
+  const handleTransferClientPortfolio = async () => {
+    if (!sourceClient || !targetAnalystForClient) {
+      toast.error("Selecione o cliente e o analista de destino.");
+      return;
+    }
+
+    setIsTransferringClient(true);
+    try {
+      // 1. Get contracts to count
+      const contractsToTransfer = contracts.filter(c => c.nome_cliente === sourceClient);
+      const count = contractsToTransfer.length;
+
+      if (count === 0) {
+        toast.warning(`O cliente ${sourceClient} não possui contratos.`);
+        setIsTransferringClient(false);
+        return;
+      }
+
+      // 2. Perform Update via Supabase
+      const { error } = await supabase
+        .from('contracts')
+        .update({ analista_responsavel: targetAnalystForClient })
+        .eq('nome_cliente', sourceClient);
+
+      if (error) throw error;
+
+      toast.success(`${count} contratos do cliente ${sourceClient} transferidos para ${targetAnalystForClient}.`);
+
+      // 3. Reset and Reload
+      setSourceClient("");
+      setTargetAnalystForClient("");
+      await loadData();
+
+    } catch (error) {
+      console.error("Erro na transferência de cliente:", error);
+      toast.error("Erro ao transferir contratos do cliente.");
+    } finally {
+      setIsTransferringClient(false);
     }
   };
 
@@ -291,6 +342,88 @@ export default function DataManagement() {
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
                     <AlertDialogAction onClick={handleTransferPortfolio} className="bg-purple-600 hover:bg-purple-700">
+                      Confirmar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </CardContent>
+
+        </Card>
+
+        {/* Transferência de Cliente para Analista */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-indigo-500" />
+              Transferência por Cliente
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <AlertDescription>
+                Transfira todos os contratos de um determinado Cliente para um Analista específico.
+              </AlertDescription>
+            </Alert>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+              <div className="space-y-2">
+                <Label>Cliente (Origem)</Label>
+                <Select value={sourceClient} onValueChange={setSourceClient}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o cliente..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map(c => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-center pb-2 md:pb-0">
+                <ArrowRight className="w-6 h-6 text-gray-400" />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Analista de Destino</Label>
+                <Select value={targetAnalystForClient} onValueChange={setTargetAnalystForClient}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o analista..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {analysts.map(a => (
+                      <SelectItem key={a} value={a}>{a}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                    disabled={isTransferringClient || !sourceClient || !targetAnalystForClient}
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    {isTransferringClient ? "Transferindo..." : "Transf. Cliente -> Analista"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar Transferência de Cliente</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Você está prestes a transferir <strong>TODOS</strong> os contratos do cliente <span className="font-bold text-indigo-600">{sourceClient}</span> para o analista <span className="font-bold text-indigo-600">{targetAnalystForClient}</span>.
+                      <br /><br />
+                      Contratos afetados: {contracts.filter(c => c.nome_cliente === sourceClient).length}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleTransferClientPortfolio} className="bg-indigo-600 hover:bg-indigo-700">
                       Confirmar
                     </AlertDialogAction>
                   </AlertDialogFooter>
