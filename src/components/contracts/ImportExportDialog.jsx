@@ -117,45 +117,90 @@ export default function ImportExportDialog({ open, onOpenChange, contracts, onIm
 
         setImportStatus({ type: "info", message: "Validando e salvando contratos..." });
 
+        // Create a map of existing contracts for fast lookup by "contrato" number
+        const existingContractsMap = new Map(
+          contracts.map(c => [c.contrato, c])
+        );
+
+        let updatedCount = 0;
+        let createdCount = 0;
+
         const processedContracts = rawContracts.map(contract => {
-          const processed = { ...contract };
+          const raw = { ...contract };
           const numericFields = ["valor_contrato", "valor_faturado", "valor_cancelado", "valor_a_faturar", "valor_novo_contrato"];
           const dateFields = ["data_inicio_efetividade", "data_fim_efetividade", "data_limite_andamento"];
 
+          // Temporary object to hold cleaned values
+          const cleanValues = {};
+
           // Clean numeric fields
           numericFields.forEach(field => {
-            if (processed[field] !== undefined && processed[field] !== null && processed[field] !== "") {
-              if (typeof processed[field] === 'string') {
-                const cleanedValue = processed[field].replace(/[^\d.,-]/g, '').replace(',', '.');
-                processed[field] = parseFloat(cleanedValue) || 0;
+            if (raw[field] !== undefined && raw[field] !== null && raw[field] !== "") {
+              if (typeof raw[field] === 'string') {
+                const cleanedValue = raw[field].replace(/[^\d.,-]/g, '').replace(',', '.');
+                cleanValues[field] = parseFloat(cleanedValue) || 0;
               } else {
-                processed[field] = Number(processed[field]) || 0;
+                cleanValues[field] = Number(raw[field]) || 0;
               }
             } else {
-              processed[field] = 0;
+              // Only default to 0 if it's a new contract or if we want to overwrite nulls.
+              // For now, let's assume if it's missing in the file, we might want to keep it 0 or null?
+              // The original code defaulter to 0. Let's keep that behavior for consistency.
+              cleanValues[field] = 0;
             }
           });
 
           // Clean date fields
           dateFields.forEach(field => {
-            processed[field] = parseDate(processed[field]);
+            if (raw[field]) {
+              cleanValues[field] = parseDate(raw[field]);
+            }
           });
 
-          // Ensure required fields are present
-          if (!processed.analista_responsavel || !processed.cliente || !processed.contrato) {
-            return null; // Skip invalid rows
+          // Ensure required fields are present in the raw input for NEW contracts, 
+          // or if we are strict about them for updates too.
+          // "contrato" is strictly required to match.
+          const contratoNumber = raw.contrato;
+
+          if (!contratoNumber) {
+            return null; // Skip if no contract number
           }
 
-          return processed;
+          // Check if exists
+          const existing = existingContractsMap.get(contratoNumber.toString());
+
+          if (existing) {
+            updatedCount++;
+            // Merge: Existing > Overwrite with Cleaned Values from Import > Keep other existing fields
+            // We only update fields that are present in the import logic or calculated above.
+            // Actually, we should merge carefully. 
+            return {
+              ...existing,          // Keep all existing fields (id, created_at, etc.)
+              ...raw,               // Overwrite with raw text fields from import (e.g. cliente, analista)
+              ...cleanValues,       // Overwrite with cleaned numeric/date fields
+              id: existing.id       // Ensure ID is preserved absolutely
+            };
+          } else {
+            // New Contract
+            createdCount++;
+            if (!raw.analista_responsavel || !raw.cliente) {
+              return null; // Skip invalid new rows if missing critical info
+            }
+            return {
+              ...raw,
+              ...cleanValues
+            };
+          }
+
         }).filter(Boolean);
 
         if (processedContracts.length === 0) {
-          const msg = "Nenhum contrato válido encontrado. Verifique se as colunas obrigatórias (analista_responsavel, cliente, contrato) estão preenchidas.";
+          const msg = "Nenhum contrato válido encontrado. Verifique se as colunas obrigatórias estão preenchidas.";
           setImportStatus({ type: "error", message: msg });
           toast.error(msg);
         } else {
-          await Contract.bulkCreate(processedContracts);
-          const msg = `${processedContracts.length} de ${rawContracts.length} contratos foram importados com sucesso!`;
+          await Contract.bulkUpsert(processedContracts);
+          const msg = `Processo concluído: ${createdCount} criados, ${updatedCount} atualizados.`;
           setImportStatus({ type: "success", message: msg });
           toast.success(msg);
           onImportComplete();

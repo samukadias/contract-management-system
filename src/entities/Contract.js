@@ -128,21 +128,31 @@ export class Contract {
         };
     }
 
-    // Bulk create for CSV import
-    static async bulkCreate(contracts) {
+    // Bulk upsert for CSV import (Create or Update)
+    static async bulkUpsert(contracts) {
         try {
-            const dbContracts = contracts.map(c => this.mapToDB(c));
+            const dbContracts = contracts.map(c => {
+                const mapped = this.mapToDB(c);
+                // If the contract has an ID, include it for the upsert to work on that ID
+                if (c.id) {
+                    mapped.id = c.id;
+                }
+                return mapped;
+            });
 
+            // upsert requires the primary key to be present in the data for updates
             const { data, error } = await supabase
                 .from('contracts')
-                .insert(dbContracts)
+                .upsert(dbContracts, { onConflict: 'id' }) // Assuming 'id' is the primary key and we prefer updating by ID if available. 
+                // If we were relying on a unique constraint like 'contrato' number, we'd use that, 
+                // but safety suggests we resolve IDs in the frontend before sending here.
                 .select();
 
             if (error) throw error;
 
             return data.map(this.mapFromDB);
         } catch (error) {
-            // console.error('Erro ao criar contratos em lote:', error);
+            console.error('Erro ao atualizar/criar contratos em lote:', error);
             throw error;
         }
     }

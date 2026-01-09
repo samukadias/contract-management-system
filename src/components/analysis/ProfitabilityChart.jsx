@@ -1,6 +1,16 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend
+} from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrendingUp } from "lucide-react";
 
@@ -33,10 +43,10 @@ export default function ProfitabilityChart({ contracts, isLoading }) {
       .map(data => ({
         ...data,
         profit: data.totalBilled - data.totalCanceled,
-        margin: data.totalValue > 0 ? ((data.totalBilled - data.totalCanceled) / data.totalValue) * 100 : 0
+        margin: data.totalBilled > 0 ? ((data.totalBilled - data.totalCanceled) / data.totalBilled) * 100 : 0
       }))
-      .sort((a, b) => b.profit - a.profit)
-      .slice(0, 8); // Top 8 clients
+      .sort((a, b) => b.totalBilled - a.totalBilled) // Sort by volume (Billed)
+      .slice(0, 10); // Top 10 clients
   };
 
   const profitabilityData = getProfitabilityData();
@@ -51,19 +61,22 @@ export default function ProfitabilityChart({ contracts, isLoading }) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-[350px] w-full" />
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card>
+    <Card className="col-span-1">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-green-500" />
-          Rentabilidade por Cliente
+          Faturado vs Valor Contratado
         </CardTitle>
+        <p className="text-sm text-gray-500">
+          Compare o volume faturado (Barra) com o valor total dos contratos (Linha).
+        </p>
       </CardHeader>
       <CardContent>
         {profitabilityData.length === 0 ? (
@@ -71,28 +84,60 @@ export default function ProfitabilityChart({ contracts, isLoading }) {
             Dados insuficientes para análise
           </div>
         ) : (
-          <div className="h-64">
+          <div className="h-[350px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={profitabilityData}>
-                <CartesianGrid strokeDasharray="3 3" />
+              <ComposedChart data={profitabilityData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                <defs>
+                  <linearGradient id="colorBilled" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="client"
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 11 }}
+                  interval={0}
                   angle={-45}
                   textAnchor="end"
-                  height={60}
+                  height={80}
                 />
-                <YAxis tick={{ fontSize: 12 }} />
+                <YAxis
+                  yAxisId="left"
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(value) => `R$${(value / 1000).toFixed(0)}k`}
+                />
+                {/* Removed secondary percentage axis */}
                 <Tooltip
-                  formatter={(value, name) => [
-                    `R$ ${value.toLocaleString('pt-BR')}`,
-                    name === 'profit' ? 'Lucro' : 'Faturado'
-                  ]}
-                  labelFormatter={(label) => `Cliente: ${label}`}
+                  contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  formatter={(value, name) => {
+                    if (name === 'totalValue') return [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Valor Contrato'];
+                    if (name === 'totalBilled') return [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Valor Faturado'];
+                    if (name === 'profit') return [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Lucro Real'];
+                    return [value, name];
+                  }}
+                  labelStyle={{ fontWeight: 'bold', color: '#1e293b', marginBottom: '4px' }}
                 />
-                <Bar dataKey="profit" fill="#10b981" name="profit" />
-                <Bar dataKey="totalBilled" fill="#3b82f6" name="totalBilled" />
-              </BarChart>
+                <Legend verticalAlign="top" height={36} />
+                <Bar
+                  yAxisId="left"
+                  dataKey="totalBilled"
+                  name="totalBilled"
+                  fill="url(#colorBilled)"
+                  radius={[4, 4, 0, 0]}
+                  barSize={40}
+                />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="totalValue"
+                  name="totalValue"
+                  stroke="#f59e0b" // Amber color for contract value
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: "#f59e0b", strokeWidth: 2, stroke: "#fff" }}
+                  activeDot={{ r: 6 }}
+                />
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         )}
