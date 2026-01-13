@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
-import { Edit, Eye } from "lucide-react";
+import { Edit, Eye, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
@@ -26,12 +26,56 @@ const vencimentoColors = {
 
 export default function ContractTable({ contracts, isLoading, onContractUpdate }) {
   const [currentPage, setCurrentPage] = React.useState(1);
+  const [sortConfig, setSortConfig] = React.useState({ key: null, direction: 'asc' });
   const itemsPerPage = 10;
 
   // Reset page when contracts change (e.g. filtering)
   React.useEffect(() => {
     setCurrentPage(1);
   }, [contracts.length]);
+
+  const sortedContracts = React.useMemo(() => {
+    let sortableItems = [...contracts];
+    if (sortConfig.key !== null) {
+      sortableItems.sort((a, b) => {
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
+
+        // Handle specific fields
+        if (sortConfig.key === 'valor_contrato') {
+          aValue = parseFloat(aValue || 0);
+          bValue = parseFloat(bValue || 0);
+        } else {
+          // Strings case insensitive
+          aValue = aValue ? aValue.toString().toLowerCase() : '';
+          bValue = bValue ? bValue.toString().toLowerCase() : '';
+        }
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [contracts, sortConfig]);
+
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) return <ArrowUpDown className="w-4 h-4 ml-2 text-gray-400 opacity-50 group-hover:opacity-100" />;
+    if (sortConfig.direction === 'asc') return <ArrowUp className="w-4 h-4 ml-2 text-blue-600" />;
+    return <ArrowDown className="w-4 h-4 ml-2 text-blue-600" />;
+  };
 
   if (isLoading) {
     return (
@@ -84,10 +128,10 @@ export default function ContractTable({ contracts, isLoading, onContractUpdate }
   }
 
   // Pagination Logic
-  const totalPages = Math.ceil(contracts.length / itemsPerPage);
+  const totalPages = Math.ceil(sortedContracts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentContracts = contracts.slice(startIndex, endIndex);
+  const currentContracts = sortedContracts.slice(startIndex, endIndex);
 
   const goToPage = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -103,12 +147,41 @@ export default function ContractTable({ contracts, isLoading, onContractUpdate }
             <TableHeader>
               <TableRow>
                 <TableHead>Analista Responsável</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Contrato</TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="p-0 h-auto font-medium hover:bg-transparent group"
+                    onClick={() => requestSort('cliente')}
+                  >
+                    Cliente
+                    {getSortIcon('cliente')}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="p-0 h-auto font-medium hover:bg-transparent group"
+                    onClick={() => requestSort('contrato')}
+                  >
+                    Contrato
+                    {getSortIcon('contrato')}
+                  </Button>
+                </TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Vencimento</TableHead>
                 <TableHead>Data Fim</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
+                <TableHead className="text-right">
+                  <div className="flex justify-end">
+                    <Button
+                      variant="ghost"
+                      className="p-0 h-auto font-medium hover:bg-transparent group"
+                      onClick={() => requestSort('valor_contrato')}
+                    >
+                      Valor
+                      {getSortIcon('valor_contrato')}
+                    </Button>
+                  </div>
+                </TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
