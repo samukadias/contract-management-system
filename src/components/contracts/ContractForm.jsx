@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { Contract } from "@/entities/Contract";
+import AutocompleteInput from "@/components/ui/autocomplete-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +20,22 @@ export default function ContractForm({
   currentUser = null,
   executedValue
 }) {
+  const [existingClients, setExistingClients] = useState([]);
+
+  // Ensure currentUser is in the list of options to prevent Select mismatch
+  const availableUsers = React.useMemo(() => {
+    if (!currentUser) return users;
+
+    const exists = users.some(u =>
+      u.full_name?.trim().toLowerCase() === currentUser.full_name?.trim().toLowerCase()
+    );
+
+    if (!exists) {
+      return [...users, currentUser];
+    }
+    return users;
+  }, [users, currentUser]);
+
   const [formData, setFormData] = useState({
     analista_responsavel: "",
     cliente: "",
@@ -51,10 +69,34 @@ export default function ContractForm({
   });
 
   useEffect(() => {
-    if (!isEdit && currentUser) {
-      setFormData(prev => ({ ...prev, analista_responsavel: currentUser.full_name }));
+    if (!isEdit && currentUser && availableUsers.length > 0) {
+      // Find exact match ignoring case to ensure Select works
+      const match = availableUsers.find(u =>
+        u.full_name?.trim().toLowerCase() === currentUser.full_name?.trim().toLowerCase()
+      );
+
+      if (match) {
+        setFormData(prev => ({ ...prev, analista_responsavel: match.full_name }));
+      } else {
+        setFormData(prev => ({ ...prev, analista_responsavel: currentUser.full_name }));
+      }
     }
-  }, [isEdit, currentUser]);
+  }, [isEdit, currentUser, availableUsers]);
+
+  // Carregar lista de clientes existentes para autocomplete
+  useEffect(() => {
+    const loadClients = async () => {
+      try {
+        const contracts = await Contract.list();
+        // Extrair nomes únicos, remover vazios e ordenar
+        const clients = [...new Set(contracts.map(c => c.cliente).filter(Boolean))].sort();
+        setExistingClients(clients);
+      } catch (error) {
+        console.error("Erro ao carregar clientes:", error);
+      }
+    };
+    loadClients();
+  }, []);
 
   // Atualizar valor faturado se vier calculado de fora (via TCs)
   useEffect(() => {
@@ -195,8 +237,8 @@ export default function ContractForm({
                     <SelectValue placeholder="Selecione um analista" />
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map(user => (
-                      <SelectItem key={user.id} value={user.full_name}>
+                    {availableUsers.map(user => (
+                      <SelectItem key={user.id || user.email} value={user.full_name}>
                         {user.full_name}
                       </SelectItem>
                     ))}
@@ -205,12 +247,14 @@ export default function ContractForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="cliente">Cliente *</Label>
-                <Input
+                <AutocompleteInput
                   id="cliente"
                   value={formData.cliente}
-                  onChange={(e) => handleInputChange("cliente", e.target.value)}
+                  onChange={(value) => handleInputChange("cliente", value)}
+                  options={existingClients}
                   required
                   disabled={!canEditBasicInfo}
+                  placeholder={!canEditBasicInfo ? (formData.cliente || "Sem cliente") : "Digite ou selecione um cliente..."}
                   className={!canEditBasicInfo ? "bg-gray-100" : ""}
                 />
               </div>

@@ -79,26 +79,25 @@ export default function ClientAnalysis({ contracts, isLoading }) {
         ) : (
           <div className="space-y-4">
             {clientData.map((client, index) => (
-              <div key={client.client} className="flex justify-between items-center p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${['bg-blue-100 text-blue-600', 'bg-green-100 text-green-600', 'bg-purple-100 text-purple-600', 'bg-orange-100 text-orange-600', 'bg-pink-100 text-pink-600'][index]
+              <div key={client.client} className="flex flex-col sm:flex-row xl:flex-col 2xl:flex-row justify-between items-start sm:items-center xl:items-start 2xl:items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                <div className="w-full">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${['bg-blue-100 text-blue-600', 'bg-green-100 text-green-600', 'bg-purple-100 text-purple-600', 'bg-orange-100 text-orange-600', 'bg-pink-100 text-pink-600'][index]
                       }`}>
                       {index + 1}
                     </div>
-                    <p className="font-medium text-gray-900">{client.client}</p>
+                    <p className="font-medium text-gray-900 line-clamp-1" title={client.client}>{client.client}</p>
                   </div>
-                  <div className="mt-1 text-sm text-gray-600 ml-8">
-                    <p>{client.contracts} contratos • Média: R$ {client.avgValue.toLocaleString('pt-BR')}</p>
-                    <p>Taxa de faturamento: {client.billingRate.toFixed(1)}%</p>
+                  <div className="text-sm text-gray-600 ml-8">
+                    <p className="whitespace-nowrap">{client.contracts} contratos • Média: R$ {client.avgValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold text-gray-900">
+                <div className="text-right ml-8 sm:ml-0 xl:ml-8 2xl:ml-0 w-full sm:w-auto xl:w-full 2xl:w-auto">
+                  <p className="font-semibold text-gray-900 whitespace-nowrap">
                     R$ {client.totalValue.toLocaleString('pt-BR')}
                   </p>
-                  <p className="text-sm text-gray-500">
-                    R$ {client.totalBilled.toLocaleString('pt-BR')} faturado
+                  <p className="text-xs text-gray-500 whitespace-nowrap">
+                    Taxa fat.: {client.billingRate.toFixed(1)}%
                   </p>
                 </div>
               </div>

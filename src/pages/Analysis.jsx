@@ -131,7 +131,7 @@ export default function Analysis() {
       <HealthMetrics healthData={healthData} isLoading={isLoading} />
 
       {/* Main Analysis Grid: Chart (2/3) + Ranking (1/3) */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid xl:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <ProfitabilityChart contracts={filteredContracts} isLoading={isLoading} />
         </div>
