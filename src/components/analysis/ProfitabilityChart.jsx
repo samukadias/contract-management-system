@@ -111,8 +111,8 @@ export default function ProfitabilityChart({ contracts, isLoading }) {
                 <Tooltip
                   contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   formatter={(value, name) => {
-                    if (name === 'totalValue') return [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Valor Contrato'];
-                    if (name === 'totalBilled') return [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Valor Faturado'];
+                    if (name === 'Contratado' || name === 'totalValue') return [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Contratado'];
+                    if (name === 'Faturado' || name === 'totalBilled') return [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Faturado'];
                     if (name === 'profit') return [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Lucro Real'];
                     return [value, name];
                   }}
@@ -122,7 +122,7 @@ export default function ProfitabilityChart({ contracts, isLoading }) {
                 <Bar
                   yAxisId="left"
                   dataKey="totalBilled"
-                  name="totalBilled"
+                  name="Faturado"
                   fill="url(#colorBilled)"
                   radius={[4, 4, 0, 0]}
                   barSize={40}
@@ -131,7 +131,7 @@ export default function ProfitabilityChart({ contracts, isLoading }) {
                   yAxisId="left"
                   type="monotone"
                   dataKey="totalValue"
-                  name="totalValue"
+                  name="Contratado"
                   stroke="#f59e0b" // Amber color for contract value
                   strokeWidth={3}
                   dot={{ r: 4, fill: "#f59e0b", strokeWidth: 2, stroke: "#fff" }}

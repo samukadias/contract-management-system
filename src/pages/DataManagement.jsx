@@ -64,7 +64,7 @@ export default function DataManagement() {
       setAnalysts(uniqueAnalysts);
 
       // Extract unique clients
-      const uniqueClients = [...new Set(contractsData.map(c => c.nome_cliente).filter(Boolean))].sort();
+      const uniqueClients = [...new Set(contractsData.map(c => c.cliente).filter(Boolean))].sort();
       setClients(uniqueClients);
 
     } catch (error) {
@@ -167,7 +167,7 @@ export default function DataManagement() {
     setIsTransferringClient(true);
     try {
       // 1. Get contracts to count
-      const contractsToTransfer = contracts.filter(c => c.nome_cliente === sourceClient);
+      const contractsToTransfer = contracts.filter(c => c.cliente === sourceClient);
       const count = contractsToTransfer.length;
 
       if (count === 0) {
@@ -180,7 +180,7 @@ export default function DataManagement() {
       const { error } = await supabase
         .from('contracts')
         .update({ analista_responsavel: targetAnalystForClient })
-        .eq('nome_cliente', sourceClient);
+        .eq('cliente', sourceClient);
 
       if (error) throw error;
 

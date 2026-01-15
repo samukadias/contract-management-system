@@ -25,7 +25,7 @@ const colorMap = {
   }
 };
 
-export default function StatsCard({ title, value, fullValue, icon: Icon, color, isLoading, progress, progressLabel }) {
+export default function StatsCard({ title, value, fullValue, icon: Icon, color, isLoading, progress, progressLabel, onClick }) {
   const colors = colorMap[color];
 
   if (isLoading) {
@@ -45,7 +45,10 @@ export default function StatsCard({ title, value, fullValue, icon: Icon, color, 
   }
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col">
+    <Card
+      className={`overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col ${onClick ? 'cursor-pointer' : ''}`}
+      onClick={onClick}
+    >
       <CardContent className="p-6 flex-grow">
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0">

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, AlertTriangle, CheckCircle, Plus, DollarSign, Clock } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl, formatCurrency, formatCompactCurrency } from "@/utils";
 import { format, addMonths, isBefore } from "date-fns";
 
@@ -13,6 +13,7 @@ export default function AnalystDashboard() {
     const { user } = useAuth();
     const [contracts, setContracts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const navigate = useNavigate();
 
     useEffect(() => {
         loadData();
@@ -69,7 +70,10 @@ export default function AnalystDashboard() {
 
             {/* Cards de Métricas */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="bg-white border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow">
+                <Card
+                    className="bg-white border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => navigate(createPageUrl("Contracts"))}
+                >
                     <CardContent className="p-6">
                         <div className="flex justify-between items-start">
                             <div className="overflow-hidden">
@@ -85,7 +89,10 @@ export default function AnalystDashboard() {
                     </CardContent>
                 </Card>
 
-                <Card className="bg-white border-l-4 border-l-green-500 shadow-sm hover:shadow-md transition-shadow">
+                <Card
+                    className="bg-white border-l-4 border-l-green-500 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => navigate(createPageUrl("Contracts") + "?status=Ativo")}
+                >
                     <CardContent className="p-6">
                         <div className="flex justify-between items-start">
                             <div className="overflow-hidden">

@@ -5,7 +5,7 @@ import ContractFilters from "../components/contracts/ContractFilters";
 import ImportExportDialog from "../components/contracts/ImportExportDialog";
 import { Button } from "@/components/ui/button";
 import { Plus, Upload } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { contractKeys } from "@/hooks/useContracts";
@@ -16,10 +16,11 @@ export default function Contracts() {
   const { data: contracts = [], isLoading } = useContracts();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
 
   const [filters, setFilters] = useState({
     search: "",
-    status: "all",
+    status: searchParams.get("status") || "all",
     analista: "all",
     vencimento: "all"
   });

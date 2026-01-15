@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Contract } from "@/entities/Contract";
 import { User } from "@/entities/User";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl, formatCurrency, formatCompactCurrency } from "@/utils";
 import {
   FileText,
@@ -12,6 +12,7 @@ import {
   DollarSign
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { differenceInDays, format } from "date-fns";
 
 import StatsCard from "../components/dashboard/StatsCard";
@@ -27,6 +28,22 @@ export default function Dashboard() {
   const [contracts, setContracts] = useState([]);
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
+  const [analystFilter, setAnalystFilter] = useState("all");
+  const navigate = useNavigate();
+
+  // Extract unique analysts for filter
+  const activeAnalysts = useMemo(() => {
+    const analysts = contracts
+      .map(c => c.analista_responsavel)
+      .filter(name => name && name.trim() !== "");
+    return [...new Set(analysts)].sort();
+  }, [contracts]);
+
+  // Filter contracts specifically for the chart
+  const filteredExpiryContracts = useMemo(() => {
+    if (analystFilter === "all") return contracts;
+    return contracts.filter(c => c.analista_responsavel === analystFilter);
+  }, [contracts, analystFilter]);
 
   useEffect(() => {
     loadContracts();
@@ -151,6 +168,7 @@ export default function Dashboard() {
           icon={FileText}
           color="blue"
           isLoading={isLoading}
+          onClick={() => navigate(createPageUrl("Contracts"))}
         />
         <StatsCard
           title="Contratos Ativos"
@@ -158,6 +176,7 @@ export default function Dashboard() {
           icon={TrendingUp}
           color="green"
           isLoading={isLoading}
+          onClick={() => navigate(createPageUrl("Contracts") + "?status=Ativo")}
         />
         <StatsCard
           title="Vencendo em 2 Meses"
@@ -179,8 +198,29 @@ export default function Dashboard() {
       </div>
 
       {/* Gráfico de Vencimentos */}
-      <div className="grid grid-cols-1">
-        <ContractsExpiringChart contracts={contracts} isLoading={isLoading} />
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h2 className="text-xl font-semibold text-gray-900">Previsão de Vencimentos</h2>
+
+          {user?.perfil === "GESTOR" && (
+            <div className="w-full sm:w-64">
+              <Select value={analystFilter} onValueChange={setAnalystFilter}>
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="Filtrar por analista" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Analistas</SelectItem>
+                  {activeAnalysts.map((analyst) => (
+                    <SelectItem key={analyst} value={analyst}>
+                      {analyst}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+        <ContractsExpiringChart contracts={filteredExpiryContracts} isLoading={isLoading} />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
